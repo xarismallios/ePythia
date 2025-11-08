@@ -1,11 +1,25 @@
 // netlify/functions/epythia.js
-import fetch from 'node-fetch';
 
-export async function handler(event) {
+exports.handler = async (event) => {
   try {
-    const body = JSON.parse(event.body || '{}');
-    const prompt = body.prompt;
+    if (event.httpMethod !== 'POST') {
+      return {
+        statusCode: 405,
+        body: JSON.stringify({ error: 'Method not allowed' }),
+      };
+    }
 
+    let body;
+    try {
+      body = JSON.parse(event.body || '{}');
+    } catch (e) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Invalid JSON body' }),
+      };
+    }
+
+    const prompt = body.prompt;
     if (!prompt) {
       return {
         statusCode: 400,
@@ -13,11 +27,21 @@ export async function handler(event) {
       };
     }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      console.error('OPENAI_API_KEY is missing');
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'Server config error: missing OPENAI_API_KEY' }),
+      };
+    }
+
+    // Χρησιμοποιούμε το global fetch (ΔΕΝ κάνουμε import node-fetch)
+    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: 'gpt-4o',
@@ -26,8 +50,9 @@ export async function handler(event) {
         messages: [
           {
             role: 'system',
-            content:
-              'You are e-Pythia, an AI career mentor. Be clear, structured, practical and encouraging.',
+            content: `
+You are e-Pythia, an AI career mentor and strategist. Be clear, structured, practical and encouraging.
+`.trim(),
           },
           {
             role: 'user',
@@ -37,27 +62,28 @@ export async function handler(event) {
       }),
     });
 
-    const data = await response.json();
+    const data = await openaiRes.json();
 
-    if (!response.ok) {
+    if (!openaiRes.ok) {
       console.error('OpenAI error:', data);
       return {
-        statusCode: response.status,
+        statusCode: openaiRes.status,
         body: JSON.stringify({ error: data }),
       };
     }
 
-    const message = data.choices?.[0]?.message?.content || 'No response generated';
+    const message =
+      data.choices?.[0]?.message?.content || 'No response generated';
 
     return {
       statusCode: 200,
       body: JSON.stringify({ message }),
     };
   } catch (err) {
-    console.error(err);
+    console.error('Netlify function error:', err);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: 'Internal Server Error' }),
     };
   }
-}
+};
