@@ -8,6 +8,7 @@ export default function EPythia() {
   const [contactInfo, setContactInfo] = useState({ firstName: '', lastName: '', email: '' });
   const [recommendations, setRecommendations] = useState('');
   const [loading, setLoading] = useState(false);
+  const [apiKey, setApiKey] = useState(''); // 🔑 OpenAI key που βάζεις εσύ στο UI
 
   const userTypes = [
     {
@@ -102,38 +103,58 @@ export default function EPythia() {
     return prompt;
   };
 
+  // 🔥 Κλήση κατευθείαν στο OpenAI με το key που βάζεις εσύ στο UI
   const handleSubmit = async () => {
+    if (!apiKey.trim()) {
+      setRecommendations('Missing OpenAI API key.');
+      return;
+    }
+
     setLoading(true);
     setStep('results');
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': process.env.REACT_APP_ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01'
+          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'gpt-4o-mini',
+          temperature: 0.7,
           max_tokens: 1500,
           messages: [
-            { role: 'user', content: generatePrompt() }
+            {
+              role: 'system',
+              content: `
+You are e-Pythia, an AI career mentor and strategist. Be clear, structured, practical and encouraging. Use headings and bullet points.
+              `.trim(),
+            },
+            {
+              role: 'user',
+              content: generatePrompt(),
+            },
           ],
         }),
       });
 
       const data = await response.json();
-      const aiResponse = data.content
-        .filter(item => item.type === 'text')
-        .map(item => item.text)
-        .join('\n');
-      
-      setRecommendations(aiResponse);
 
+      if (!response.ok) {
+        console.error('OpenAI error:', data);
+        setRecommendations('Sorry, there was an error calling OpenAI.');
+        return;
+      }
+
+      const aiText =
+        data.choices?.[0]?.message?.content ||
+        'No response generated.';
+
+      setRecommendations(aiText);
     } catch (error) {
-      setRecommendations('Sorry, there was an error. Please try again.');
       console.error('Error:', error);
+      setRecommendations('Sorry, there was an error. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -145,6 +166,7 @@ export default function EPythia() {
     setFormData({});
     setContactInfo({ firstName: '', lastName: '', email: '' });
     setRecommendations('');
+    setApiKey('');
   };
 
   const isFormComplete = () => {
@@ -152,7 +174,12 @@ export default function EPythia() {
   };
 
   const isContactComplete = () => {
-    return contactInfo.firstName.trim() && contactInfo.lastName.trim() && contactInfo.email.includes('@');
+    return (
+      contactInfo.firstName.trim() &&
+      contactInfo.lastName.trim() &&
+      contactInfo.email.includes('@') &&
+      apiKey.trim() // χρειάζεται και το key
+    );
   };
 
   return (
@@ -203,32 +230,6 @@ export default function EPythia() {
             
             <h2 className="text-6xl font-bold mb-6 bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">e-Pythia</h2>
             <p className="text-2xl text-slate-300 mb-8 max-w-2xl mx-auto font-semibold">Your Career Guide</p>
-            
-            <div className="mb-8 flex justify-center">
-              <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
-                <rect x="35" y="50" width="50" height="55" rx="8" fill="#E2E8F0" stroke="#94A3B8" strokeWidth="2"/>
-                <rect x="40" y="25" width="40" height="35" rx="8" fill="#E2E8F0" stroke="#94A3B8" strokeWidth="2"/>
-                <line x1="60" y1="25" x2="60" y2="15" stroke="#94A3B8" strokeWidth="2"/>
-                <circle cx="60" cy="12" r="3" fill="#8B5CF6"/>
-                <circle cx="50" cy="40" r="4" fill="#6366F1"/>
-                <circle cx="70" cy="40" r="4" fill="#6366F1"/>
-                <path d="M 48 50 Q 60 56 72 50" stroke="#94A3B8" strokeWidth="2" fill="none" strokeLinecap="round"/>
-                <rect x="25" y="60" width="8" height="25" rx="4" fill="#CBD5E1"/>
-                <rect x="87" y="60" width="8" height="25" rx="4" fill="#CBD5E1"/>
-                <g transform="translate(15, 75)">
-                  <circle cx="10" cy="10" r="12" fill="#FFFFFF" stroke="#8B5CF6" strokeWidth="2"/>
-                  <circle cx="10" cy="10" r="8" fill="none" stroke="#C4B5FD" strokeWidth="1"/>
-                  <line x1="10" y1="10" x2="10" y2="4" stroke="#EF4444" strokeWidth="2" strokeLinecap="round"/>
-                  <line x1="10" y1="10" x2="10" y2="16" stroke="#64748B" strokeWidth="2" strokeLinecap="round"/>
-                  <text x="10" y="3" fontSize="4" fill="#8B5CF6" textAnchor="middle" fontWeight="bold">N</text>
-                </g>
-                <rect x="42" y="105" width="12" height="8" rx="4" fill="#CBD5E1"/>
-                <rect x="66" y="105" width="12" height="8" rx="4" fill="#CBD5E1"/>
-                <circle cx="60" cy="70" r="3" fill="#6366F1" opacity="0.6"/>
-                <rect x="50" y="80" width="20" height="2" rx="1" fill="#6366F1" opacity="0.4"/>
-                <rect x="52" y="85" width="16" height="2" rx="1" fill="#6366F1" opacity="0.4"/>
-              </svg>
-            </div>
             
             <div className="mb-16 max-w-2xl mx-auto">
               <p className="text-lg text-slate-400 mb-2">Select Your Profile</p>
@@ -361,8 +362,27 @@ export default function EPythia() {
                 </div>
               </div>
 
+              {/* OpenAI API key field – μόνο για σένα */}
+              <div className="mt-6 p-4 bg-slate-900/60 rounded-xl border border-slate-700">
+                <label className="block text-sm font-semibold mb-2 text-slate-300">
+                  OpenAI API key (used locally in your browser)
+                </label>
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="sk-..."
+                  className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 placeholder-slate-500 text-slate-200 transition"
+                />
+                <p className="text-xs text-slate-500 mt-2">
+                  This key is used only in your browser. Don&apos;t share this page with your key filled in.
+                </p>
+              </div>
+
               <div className="mt-6 p-4 bg-violet-500/10 border border-violet-500/30 rounded-xl">
-                <p className="text-sm text-slate-300">🔒 Your information is secure. We'll send your personalized career guidance to this email address.</p>
+                <p className="text-sm text-slate-300">
+                  🔒 Your information is not stored on a server in this demo. Results are generated live using your OpenAI key.
+                </p>
               </div>
 
               <button
@@ -417,7 +437,7 @@ export default function EPythia() {
                       </div>
                       <div className="flex-1">
                         <p className="text-slate-200 font-semibold">Report Ready</p>
-                        <p className="text-sm text-slate-400">A detailed PDF will be sent to {contactInfo.email}</p>
+                        <p className="text-sm text-slate-400">Generated live using your profile</p>
                       </div>
                     </div>
                   </div>
@@ -463,7 +483,7 @@ export default function EPythia() {
       </div>
 
       <div className="text-center py-8 text-slate-500 text-sm border-t border-slate-800">
-        <p>e-Pythia • AI-Powered Career Guidance • Your Future Starts Here • Created by Charis Mallios contact me at charismallios@gmail.com </p>
+        <p>e-Pythia • AI-Powered Career Guidance • Your Future Starts Here • Created by Charis Mallios • contact me at charismallios@gmail.com </p>
       </div>
     </div>
   );
