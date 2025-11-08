@@ -8,7 +8,6 @@ export default function EPythia() {
   const [contactInfo, setContactInfo] = useState({ firstName: '', lastName: '', email: '' });
   const [recommendations, setRecommendations] = useState('');
   const [loading, setLoading] = useState(false);
-  const [apiKey, setApiKey] = useState(''); // 🔑 OpenAI key που βάζεις εσύ στο UI
 
   const userTypes = [
     {
@@ -21,7 +20,7 @@ export default function EPythia() {
     {
       id: 'university',
       title: 'University Student',
-      description: 'Find your ideal master\'s program or career start',
+      description: "Find your ideal master's program or career start",
       icon: Compass,
       gradient: 'from-violet-500 to-purple-500'
     },
@@ -45,8 +44,8 @@ export default function EPythia() {
     university: [
       { id: 'degree', label: 'What is your current degree/major?', type: 'text', placeholder: 'e.g., Computer Science, Business Administration...' },
       { id: 'interests', label: 'What topics or areas interest you most?', type: 'textarea', placeholder: 'e.g., AI, Marketing, Finance, Research...' },
-      { id: 'experience', label: 'Any internships or projects you\'ve done?', type: 'textarea', placeholder: 'Describe your relevant experience...' },
-      { id: 'nextStep', label: 'Are you considering a Master\'s degree or entering the workforce?', type: 'select', options: ['Master\'s Degree', 'Start Working', 'Not Sure Yet'] },
+      { id: 'experience', label: "Any internships or projects you've done?", type: 'textarea', placeholder: 'Describe your relevant experience...' },
+      { id: 'nextStep', label: "Are you considering a Master's degree or entering the workforce?", type: 'select', options: ["Master's Degree", 'Start Working', 'Not Sure Yet'] },
       { id: 'goals', label: 'What are your career goals?', type: 'textarea', placeholder: 'Where do you see yourself in 5 years?' }
     ],
     employee: [
@@ -65,11 +64,11 @@ export default function EPythia() {
   };
 
   const handleInputChange = (questionId, value) => {
-    setFormData(prev => ({ ...prev, [questionId]: value }));
+    setFormData((prev) => ({ ...prev, [questionId]: value }));
   };
 
   const handleContactChange = (field, value) => {
-    setContactInfo(prev => ({ ...prev, [field]: value }));
+    setContactInfo((prev) => ({ ...prev, [field]: value }));
   };
 
   const proceedToContact = () => {
@@ -86,8 +85,8 @@ export default function EPythia() {
     };
 
     let prompt = `You are e-Pythia, an expert career counselor. A ${typeLabels[userType]} needs your guidance.\n\nUser Profile:\n`;
-    
-    questions[userType].forEach(q => {
+
+    questions[userType].forEach((q) => {
       const answer = formData[q.id] || 'Not provided';
       prompt += `- ${q.label}: ${answer}\n`;
     });
@@ -103,57 +102,28 @@ export default function EPythia() {
     return prompt;
   };
 
-  // 🔥 Κλήση κατευθείαν στο OpenAI με το key που βάζεις εσύ στο UI
   const handleSubmit = async () => {
-    if (!apiKey.trim()) {
-      setRecommendations('Missing OpenAI API key.');
-      return;
-    }
-
     setLoading(true);
     setStep('results');
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch('/.netlify/functions/epythia', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          temperature: 0.7,
-          max_tokens: 1500,
-          messages: [
-            {
-              role: 'system',
-              content: `
-You are e-Pythia, an AI career mentor and strategist. Be clear, structured, practical and encouraging. Use headings and bullet points.
-              `.trim(),
-            },
-            {
-              role: 'user',
-              content: generatePrompt(),
-            },
-          ],
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: generatePrompt() }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        console.error('OpenAI error:', data);
-        setRecommendations('Sorry, there was an error calling OpenAI.');
+        console.error('Server error:', data);
+        setRecommendations('Sorry, there was an error processing your request.');
         return;
       }
 
-      const aiText =
-        data.choices?.[0]?.message?.content ||
-        'No response generated.';
-
-      setRecommendations(aiText);
+      setRecommendations(data.message);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Fetch failed:', error);
       setRecommendations('Sorry, there was an error. Please try again.');
     } finally {
       setLoading(false);
@@ -166,26 +136,20 @@ You are e-Pythia, an AI career mentor and strategist. Be clear, structured, prac
     setFormData({});
     setContactInfo({ firstName: '', lastName: '', email: '' });
     setRecommendations('');
-    setApiKey('');
   };
 
   const isFormComplete = () => {
-    return questions[userType]?.every(q => formData[q.id] && formData[q.id].trim() !== '');
+    return questions[userType]?.every((q) => formData[q.id] && formData[q.id].trim() !== '');
   };
 
   const isContactComplete = () => {
-    return (
-      contactInfo.firstName.trim() &&
-      contactInfo.lastName.trim() &&
-      contactInfo.email.includes('@') &&
-      apiKey.trim() // χρειάζεται και το key
-    );
+    return contactInfo.firstName.trim() && contactInfo.lastName.trim() && contactInfo.email.includes('@');
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      <div className="bg-slate-900/80 backdrop-blur-xl border-b border-slate-700/50 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-200">
+      <div className="sticky top-0 bg-slate-900/80 border-b border-slate-700/50 backdrop-blur-xl z-50">
+        <div className="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
           <div className="flex items-center gap-4">
             <div className="relative">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400 via-violet-400 to-fuchsia-400 p-0.5">
@@ -193,7 +157,7 @@ You are e-Pythia, an AI career mentor and strategist. Be clear, structured, prac
                   <Eye className="w-6 h-6 text-cyan-400" />
                 </div>
               </div>
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-br from-violet-400 to-fuchsia-400 rounded-full animate-pulse"></div>
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-br from-violet-400 to-fuchsia-400 rounded-full animate-pulse" />
             </div>
             <div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">e-Pythia</h1>
@@ -201,7 +165,7 @@ You are e-Pythia, an AI career mentor and strategist. Be clear, structured, prac
             </div>
           </div>
           {step !== 'welcome' && (
-            <button onClick={resetApp} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition-all border border-slate-700">
+            <button onClick={resetApp} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700">
               <ArrowLeft className="w-4 h-4" />
               <span className="hidden sm:inline">Start Over</span>
             </button>
@@ -212,30 +176,9 @@ You are e-Pythia, an AI career mentor and strategist. Be clear, structured, prac
       <div className="max-w-7xl mx-auto px-6 py-16">
         {step === 'welcome' && (
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800/50 border border-slate-700/50 mb-6">
-              <Sparkles className="w-4 h-4 text-violet-400" />
-              <span className="text-sm text-slate-300">Powered by AI</span>
-            </div>
-            
-            <div className="flex justify-center mb-6">
-              <div className="relative">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-400 via-violet-400 to-fuchsia-400 p-0.5">
-                  <div className="w-full h-full bg-slate-900 rounded-2xl flex items-center justify-center">
-                    <Eye className="w-10 h-10 text-cyan-400" />
-                  </div>
-                </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-br from-violet-400 to-fuchsia-400 rounded-full animate-pulse"></div>
-              </div>
-            </div>
-            
-            <h2 className="text-6xl font-bold mb-6 bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">e-Pythia</h2>
-            <p className="text-2xl text-slate-300 mb-8 max-w-2xl mx-auto font-semibold">Your Career Guide</p>
-            
-            <div className="mb-16 max-w-2xl mx-auto">
-              <p className="text-lg text-slate-400 mb-2">Select Your Profile</p>
-              <p className="text-base text-slate-500">Choose the option that best matches your current career stage</p>
-            </div>
-
+            <Sparkles className="w-5 h-5 mx-auto mb-4 text-violet-400" />
+            <h2 className="text-5xl font-bold mb-4 bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">e-Pythia</h2>
+            <p className="text-xl text-slate-300 mb-10">Your AI-Powered Career Guide</p>
             <div className="max-w-3xl mx-auto space-y-5">
               {userTypes.map((type) => {
                 const Icon = type.icon;
@@ -243,17 +186,17 @@ You are e-Pythia, an AI career mentor and strategist. Be clear, structured, prac
                   <button
                     key={type.id}
                     onClick={() => handleUserTypeSelect(type.id)}
-                    className="group w-full bg-slate-800/50 backdrop-blur-sm rounded-2xl p-8 hover:bg-slate-800 transition-all duration-300 border border-slate-700/50 hover:border-slate-600 hover:scale-[1.02]"
+                    className="group w-full bg-slate-800/50 backdrop-blur-sm rounded-2xl p-8 hover:bg-slate-800 border border-slate-700/50 hover:border-slate-600 transition"
                   >
                     <div className="flex items-center gap-6">
-                      <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${type.gradient} flex items-center justify-center flex-shrink-0`}>
+                      <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${type.gradient} flex items-center justify-center`}>
                         <Icon className="w-8 h-8 text-white" />
                       </div>
-                      <div className="flex-1 text-left">
-                        <h3 className="text-2xl font-bold mb-1 text-white">{type.title}</h3>
-                        <p className="text-slate-400 text-base">{type.description}</p>
+                      <div className="text-left">
+                        <h3 className="text-2xl font-bold mb-1">{type.title}</h3>
+                        <p className="text-slate-400">{type.description}</p>
                       </div>
-                      <ChevronRight className="w-7 h-7 text-slate-500 group-hover:text-violet-400 group-hover:translate-x-1 transition flex-shrink-0" />
+                      <ChevronRight className="w-6 h-6 text-slate-500 group-hover:text-violet-400 group-hover:translate-x-1 transition" />
                     </div>
                   </button>
                 );
@@ -263,219 +206,108 @@ You are e-Pythia, an AI career mentor and strategist. Be clear, structured, prac
         )}
 
         {step === 'questionnaire' && (
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-8 border border-slate-700/50">
-              <h2 className="text-3xl font-bold mb-2 text-white">Tell Us About Yourself</h2>
-              <p className="text-slate-400 mb-8">Your answers help us provide personalized career guidance</p>
-
-              <div className="space-y-6">
-                {questions[userType].map((question, idx) => (
-                  <div key={question.id}>
-                    <label className="block text-base font-semibold mb-2 text-slate-200">
-                      {idx + 1}. {question.label}
-                    </label>
-                    {question.type === 'textarea' ? (
-                      <textarea
-                        value={formData[question.id] || ''}
-                        onChange={(e) => handleInputChange(question.id, e.target.value)}
-                        placeholder={question.placeholder}
-                        className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 placeholder-slate-500 text-slate-200 min-h-28 transition"
-                      />
-                    ) : question.type === 'select' ? (
-                      <select
-                        value={formData[question.id] || ''}
-                        onChange={(e) => handleInputChange(question.id, e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 text-slate-200 transition"
-                      >
-                        <option value="">Select an option</option>
-                        {question.options.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        type="text"
-                        value={formData[question.id] || ''}
-                        onChange={(e) => handleInputChange(question.id, e.target.value)}
-                        placeholder={question.placeholder}
-                        className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 placeholder-slate-500 text-slate-200 transition"
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={proceedToContact}
-                disabled={!isFormComplete()}
-                className={`w-full mt-8 py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-all ${
-                  isFormComplete()
-                    ? 'bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 hover:from-cyan-400 hover:via-violet-400 hover:to-fuchsia-400 text-white shadow-lg shadow-violet-500/50'
-                    : 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                }`}
-              >
-                Continue
-                <ChevronRight className="w-5 h-5" />
-              </button>
+          <div className="max-w-4xl mx-auto bg-slate-800/50 rounded-2xl p-8 border border-slate-700/50">
+            <h2 className="text-3xl font-bold mb-2">Tell Us About Yourself</h2>
+            <p className="text-slate-400 mb-8">Your answers help us provide personalized career guidance</p>
+            <div className="space-y-6">
+              {questions[userType].map((question, idx) => (
+                <div key={question.id}>
+                  <label className="block text-base font-semibold mb-2">
+                    {idx + 1}. {question.label}
+                  </label>
+                  {question.type === 'textarea' ? (
+                    <textarea
+                      value={formData[question.id] || ''}
+                      onChange={(e) => handleInputChange(question.id, e.target.value)}
+                      placeholder={question.placeholder}
+                      className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700 focus:border-violet-500 outline-none text-slate-200 min-h-28 transition"
+                    />
+                  ) : question.type === 'select' ? (
+                    <select
+                      value={formData[question.id] || ''}
+                      onChange={(e) => handleInputChange(question.id, e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700 focus:border-violet-500 outline-none text-slate-200 transition"
+                    >
+                      <option value="">Select an option</option>
+                      {question.options.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={formData[question.id] || ''}
+                      onChange={(e) => handleInputChange(question.id, e.target.value)}
+                      placeholder={question.placeholder}
+                      className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700 focus:border-violet-500 outline-none text-slate-200 transition"
+                    />
+                  )}
+                </div>
+              ))}
             </div>
+            <button
+              onClick={proceedToContact}
+              disabled={!isFormComplete()}
+              className={`w-full mt-8 py-4 rounded-xl font-bold flex items-center justify-center gap-2 ${
+                isFormComplete()
+                  ? 'bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 text-white hover:opacity-90'
+                  : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+              }`}
+            >
+              Continue
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
         )}
 
         {step === 'contact' && (
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-8 border border-slate-700/50">
-              <h2 className="text-3xl font-bold mb-2 text-white">Almost There!</h2>
-              <p className="text-slate-400 mb-8">Enter your details to receive your personalized career guidance</p>
-
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-base font-semibold mb-2 text-slate-200">First Name</label>
+          <div className="max-w-2xl mx-auto bg-slate-800/50 rounded-2xl p-8 border border-slate-700/50">
+            <h2 className="text-3xl font-bold mb-2">Almost There!</h2>
+            <p className="text-slate-400 mb-8">Enter your details to receive your personalized career guidance</p>
+            <div className="space-y-5">
+              {['firstName', 'lastName', 'email'].map((field) => (
+                <div key={field}>
+                  <label className="block text-base font-semibold mb-2 capitalize">{field}</label>
                   <input
-                    type="text"
-                    value={contactInfo.firstName}
-                    onChange={(e) => handleContactChange('firstName', e.target.value)}
-                    placeholder="Enter your first name"
-                    className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 placeholder-slate-500 text-slate-200 transition"
+                    type={field === 'email' ? 'email' : 'text'}
+                    value={contactInfo[field]}
+                    onChange={(e) => handleContactChange(field, e.target.value)}
+                    placeholder={`Enter your ${field}`}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700 focus:border-violet-500 outline-none text-slate-200 transition"
                   />
                 </div>
-
-                <div>
-                  <label className="block text-base font-semibold mb-2 text-slate-200">Last Name</label>
-                  <input
-                    type="text"
-                    value={contactInfo.lastName}
-                    onChange={(e) => handleContactChange('lastName', e.target.value)}
-                    placeholder="Enter your last name"
-                    className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 placeholder-slate-500 text-slate-200 transition"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-base font-semibold mb-2 text-slate-200">Email Address</label>
-                  <input
-                    type="email"
-                    value={contactInfo.email}
-                    onChange={(e) => handleContactChange('email', e.target.value)}
-                    placeholder="your.email@example.com"
-                    className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 placeholder-slate-500 text-slate-200 transition"
-                  />
-                </div>
-              </div>
-
-              {/* OpenAI API key field – μόνο για σένα */}
-              <div className="mt-6 p-4 bg-slate-900/60 rounded-xl border border-slate-700">
-                <label className="block text-sm font-semibold mb-2 text-slate-300">
-                  OpenAI API key (used locally in your browser)
-                </label>
-                <input
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="sk-..."
-                  className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 placeholder-slate-500 text-slate-200 transition"
-                />
-                <p className="text-xs text-slate-500 mt-2">
-                  This key is used only in your browser. Don&apos;t share this page with your key filled in.
-                </p>
-              </div>
-
-              <div className="mt-6 p-4 bg-violet-500/10 border border-violet-500/30 rounded-xl">
-                <p className="text-sm text-slate-300">
-                  🔒 Your information is not stored on a server in this demo. Results are generated live using your OpenAI key.
-                </p>
-              </div>
-
-              <button
-                onClick={handleSubmit}
-                disabled={!isContactComplete()}
-                className={`w-full mt-8 py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-all ${
-                  isContactComplete()
-                    ? 'bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 hover:from-cyan-400 hover:via-violet-400 hover:to-fuchsia-400 text-white shadow-lg shadow-violet-500/50'
-                    : 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                }`}
-              >
-                <Sparkles className="w-5 h-5" />
-                Generate Career Guidance
-                <ChevronRight className="w-5 h-5" />
-              </button>
+              ))}
             </div>
+            <button
+              onClick={handleSubmit}
+              disabled={!isContactComplete()}
+              className={`w-full mt-8 py-4 rounded-xl font-bold flex items-center justify-center gap-2 ${
+                isContactComplete()
+                  ? 'bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 text-white hover:opacity-90'
+                  : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+              }`}
+            >
+              <Sparkles className="w-5 h-5" />
+              Generate Career Guidance
+            </button>
           </div>
         )}
 
         {step === 'results' && (
           <div className="max-w-5xl mx-auto">
             {loading ? (
-              <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-8 border border-slate-700/50">
-                <div className="text-center py-20">
-                  <div className="inline-block w-16 h-16 border-4 border-slate-700 border-t-violet-500 rounded-full animate-spin mb-4"></div>
-                  <p className="text-xl text-slate-400 mb-2">Analyzing your profile...</p>
-                  <p className="text-sm text-slate-500">Preparing to send results to {contactInfo.email}</p>
-                </div>
+              <div className="text-center py-20">
+                <div className="inline-block w-16 h-16 border-4 border-slate-700 border-t-violet-500 rounded-full animate-spin mb-4"></div>
+                <p className="text-xl text-slate-400 mb-2">Analyzing your profile...</p>
               </div>
             ) : (
-              <div>
-                <div className="bg-gradient-to-br from-cyan-500/10 via-violet-500/10 to-fuchsia-500/10 backdrop-blur-sm rounded-3xl p-12 border border-violet-500/30 mb-8 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-violet-500/20 to-transparent rounded-full blur-3xl"></div>
-                  <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-cyan-500/20 to-transparent rounded-full blur-3xl"></div>
-                  
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-violet-500 flex items-center justify-center shadow-lg">
-                        <Sparkles className="w-8 h-8 text-white" />
-                      </div>
-                      <div>
-                        <h2 className="text-4xl font-bold text-white mb-1">Your Career Roadmap</h2>
-                        <p className="text-slate-300">Personalized guidance for {contactInfo.firstName} {contactInfo.lastName}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-3 p-4 bg-slate-900/50 rounded-xl border border-slate-700/50">
-                      <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                        <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-slate-200 font-semibold">Report Ready</p>
-                        <p className="text-sm text-slate-400">Generated live using your profile</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-slate-800/30 backdrop-blur-sm rounded-3xl border border-slate-700/50 overflow-hidden mb-8">
-                  <div className="bg-gradient-to-r from-violet-600/20 via-fuchsia-600/20 to-cyan-600/20 border-b border-slate-700/50 px-10 py-8">
-                    <h3 className="text-3xl font-bold bg-gradient-to-r from-white to-slate-200 bg-clip-text text-transparent mb-1">
-                      Your Personalized Analysis
-                    </h3>
-                    <p className="text-slate-300 text-base">Tailored insights based on your unique profile</p>
-                  </div>
-                  
-                  <div className="px-10 py-10">
-                    <div className="prose prose-invert prose-slate max-w-none">
-                      <div className="text-slate-200 text-lg leading-relaxed whitespace-pre-wrap">
-                        {recommendations}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="h-1 bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500"></div>
-                </div>
-
-                <div className="bg-gradient-to-br from-slate-800/50 to-slate-800/30 backdrop-blur-sm rounded-2xl p-8 border border-slate-700/50">
-                  <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold text-white mb-2">Ready to Start Your Journey?</h3>
-                      <p className="text-slate-400">Use this guidance as your roadmap to achieve your career goals.</p>
-                    </div>
-                    <button
-                      onClick={resetApp}
-                      className="px-8 py-4 rounded-xl bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 hover:from-cyan-400 hover:via-violet-400 hover:to-fuchsia-400 text-white font-bold transition-all shadow-lg shadow-violet-500/50 whitespace-nowrap"
-                    >
-                      Start New Analysis
-                    </button>
-                  </div>
-                </div>
+              <div className="bg-slate-800/30 rounded-3xl p-12 border border-slate-700/50">
+                <h2 className="text-4xl font-bold mb-6 bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
+                  Your Career Roadmap
+                </h2>
+                <div className="text-slate-200 text-lg whitespace-pre-wrap leading-relaxed">{recommendations}</div>
               </div>
             )}
           </div>
@@ -483,7 +315,12 @@ You are e-Pythia, an AI career mentor and strategist. Be clear, structured, prac
       </div>
 
       <div className="text-center py-8 text-slate-500 text-sm border-t border-slate-800">
-        <p>e-Pythia • AI-Powered Career Guidance • Your Future Starts Here • Created by Charis Mallios • contact me at charismallios@gmail.com </p>
+        <p>
+          e-Pythia • AI Career Guide • Created by Charis Mallios •
+          <a href="mailto:charismallios@gmail.com" className="text-violet-400 hover:underline ml-1">
+            charismallios@gmail.com
+          </a>
+        </p>
       </div>
     </div>
   );
