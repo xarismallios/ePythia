@@ -9,8 +9,6 @@ export default function EPythia() {
   const [recommendations, setRecommendations] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const coachPhotoUrl = "https://media.licdn.com/dms/image/EDIT-WITH-YOUR-LINKEDIN-ID/profile-displayphoto-shrink_400_400/0/TIMESTAMP?e=EXPIRATION&v=VERSION";
-
   const userTypes = [
     {
       id: 'highschool',
