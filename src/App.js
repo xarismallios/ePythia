@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Compass, 
   GraduationCap, 
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export default function EPythia() {
   const [step, setStep] = useState('welcome');
@@ -22,6 +23,8 @@ export default function EPythia() {
   const [contactInfo, setContactInfo] = useState({ firstName: '', lastName: '', email: '' });
   const [recommendations, setRecommendations] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const resultsRef = useRef(null);
 
   const userTypes = [
     {
@@ -206,31 +209,30 @@ export default function EPythia() {
 
   const currentProgress = Math.round((Object.values(formData).filter(v => v?.trim()).length / questions[userType]?.length) * 100) || 0;
 
-  const handleDownloadPdf = () => {
-    const doc = new jsPDF({
-      orientation: 'p',
-      unit: 'mm',
-      format: 'a4',
-    });
+  const handleDownloadPdf = async () => {
+    if (!resultsRef.current) return;
 
-    const title = 'e-Pythia - Καθοδήγηση Καριέρας';
-    const nameLine = `${contactInfo.firstName} ${contactInfo.lastName}`.trim();
-    const emailLine = contactInfo.email ? `Email: ${contactInfo.email}` : '';
+    try {
+      const canvas = await html2canvas(resultsRef.current, {
+        scale: 2,
+        useCORS: true,
+      });
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.text(title, 15, 20);
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
 
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    if (nameLine) doc.text(nameLine, 15, 30);
-    if (emailLine) doc.text(emailLine, 15, 36);
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const y = imgHeight < pdfHeight ? (pdfHeight - imgHeight) / 2 : 0;
 
-    const bodyText = recommendations || '';
-    const lines = doc.splitTextToSize(bodyText, 180);
-    doc.text(lines, 15, 48);
-
-    doc.save(`career-guidance-${Date.now()}.pdf`);
+      pdf.addImage(imgData, 'PNG', 0, y, imgWidth, imgHeight);
+      pdf.save(`career-guidance-${Date.now()}.pdf`);
+    } catch (err) {
+      console.error('PDF generation error:', err);
+      alert('Κάτι πήγε στραβά στη δημιουργία του PDF. Δοκίμασε ξανά.');
+    }
   };
 
   return (
@@ -327,7 +329,7 @@ export default function EPythia() {
             </div>
 
             {/* Coach Card */}
-            <div className="max-w-4xl mx-auto bg-gradient-to-br from-slate-800/50 to-slate-800/20 rounded-2xl p-10 border border-slate-700/50 backdrop-blur-sm">
+            <div className="max-w-4xl mx-auto bg-gradient-to-br from-slate-800/50 to-slate-800/20 rounded-2ξ p-10 border border-slate-700/50 backdrop-blur-sm">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
                 {/* Illustration */}
                 <div className="flex justify-center md:justify-start">
@@ -545,7 +547,10 @@ export default function EPythia() {
             ) : (
               <div className="space-y-8">
                 {/* AI Recommendations */}
-                <div className="bg-gradient-to-br from-slate-800/50 to-slate-800/20 rounded-2xl p-10 border border-slate-700/50 backdrop-blur-sm">
+                <div
+                  ref={resultsRef}
+                  className="bg-gradient-to-br from-slate-800/50 to-slate-800/20 rounded-2xl p-10 border border-slate-700/50 backdrop-blur-sm"
+                >
                   <div className="flex items-center gap-3 mb-8">
                     <Sparkles className="w-8 h-8 text-violet-400" />
                     <h2 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
@@ -666,7 +671,7 @@ export default function EPythia() {
           <span className="font-semibold text-slate-300">e-Pythia</span> • AI Σύμβουλος Καριέρας από τον <span className="font-semibold text-slate-300">Χάρη Μάλλιο</span>
         </p>
         <div className="flex items-center justify-center gap-2">
-          <span>✨ Συνδυάζοντας την δύναμη της Τεχνητή Νοημοσύνη με την Ανθρώπινη Εμπειρία Χρόνων ✨</span>
+          <span>✨ Συνδυάζοντας την δύναμη της Τεχνητής Νοημοσύνης με την Ανθρώπινη Εμπειρία Χρόνων ✨</span>
         </div>
         <p className="mt-3">
           <a href="mailto:pythiacontact@gmail.com" className="text-violet-400 hover:text-violet-300 transition-colors font-semibold">
