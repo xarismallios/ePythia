@@ -12,7 +12,8 @@ import {
   MessageCircle, 
   Star 
 } from 'lucide-react';
-
+import ReactMarkdown from 'react-markdown';
+import jsPDF from 'jspdf';
 
 export default function EPythia() {
   const [step, setStep] = useState('welcome');
@@ -145,6 +146,17 @@ export default function EPythia() {
       prompt += `\nΠαράσχε:\n1. Επόμενα επαγγελματικά βήματα\n2. Πώς να αξιοποιήσει την εμπειρία του\n3. Δεξιότητες που πρέπει να αναπτύξει\n4. Σχέδιο δράσης για τους επόμενους 6-12 μήνες\n\nΒe strategic.`;
     }
 
+    prompt += `
+\n\nΔώσε την απάντηση σε δομημένη μορφή με markdown, με ξεκάθαρες ενότητες:
+### 1. Κορυφαίες επιλογές
+### 2. Εναλλακτικές διαδρομές
+### 3. Δεξιότητες που πρέπει να αναπτύξει
+### 4. Επόμενα βήματα
+
+Μην προσθέτεις χαιρετισμούς (π.χ. "Φίλε/η μαθητή/τρια") ούτε καταληκτικές γενικές παραγράφους.
+Μην ξαναγράφεις τίτλο με το όνομα e-Pythia ή το όνομα του χρήστη. Ξεκίνα κατευθείαν από το πρώτο section.
+`.trim();
+
     return prompt;
   };
 
@@ -194,6 +206,33 @@ export default function EPythia() {
 
   const currentProgress = Math.round((Object.values(formData).filter(v => v?.trim()).length / questions[userType]?.length) * 100) || 0;
 
+  const handleDownloadPdf = () => {
+    const doc = new jsPDF({
+      orientation: 'p',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    const title = 'e-Pythia - Καθοδήγηση Καριέρας';
+    const nameLine = `${contactInfo.firstName} ${contactInfo.lastName}`.trim();
+    const emailLine = contactInfo.email ? `Email: ${contactInfo.email}` : '';
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text(title, 15, 20);
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    if (nameLine) doc.text(nameLine, 15, 30);
+    if (emailLine) doc.text(emailLine, 15, 36);
+
+    const bodyText = recommendations || '';
+    const lines = doc.splitTextToSize(bodyText, 180);
+    doc.text(lines, 15, 48);
+
+    doc.save(`career-guidance-${Date.now()}.pdf`);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-200">
       {/* Navigation Header */}
@@ -242,41 +281,45 @@ export default function EPythia() {
 
             {/* User Type Selection */}
             <div className="max-w-6xl mx-auto mb-20">
-              <p className="text-center mb-6 text-lg leading-relaxed bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent font-semibold">Διάλεξε τη κατηγορία που ανήκεις και λάβε άμεσα και δωρέαν την ανάλυση μας, για τα επόμενά σου βήματα με τη δύναμη της Τεχνητής Νοημοσύνης</p>
+              <p className="text-center mb-6 text-lg leading-relaxed bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent font-semibold">
+                Διάλεξε τη κατηγορία που ανήκεις και λάβε άμεσα και δωρέαν την ανάλυση μας, για τα επόμενά σου βήματα με τη δύναμη της Τεχνητής Νοημοσύνης
+              </p>
               <div className="flex justify-center mb-8 animate-bounce">
                 <ChevronRight className="w-8 h-8 text-violet-400 rotate-90" />
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {userTypes.map((type) => {
-                const Icon = type.icon;
-                return (
-                  <button
-                    key={type.id}
-                    onClick={() => handleUserTypeSelect(type.id)}
-                    className="group relative bg-gradient-to-br from-slate-800/50 to-slate-800/20 backdrop-blur-sm rounded-3xl p-12 border border-slate-700/50 hover:border-slate-600 transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/10 hover:-translate-y-2"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-slate-800/0 to-slate-800/0 group-hover:from-slate-800/50 group-hover:to-slate-800/20 rounded-3xl transition-all duration-300" />
-                    <div className="relative z-10 flex flex-col items-center text-center">
-                      <h3 className="text-2xl font-bold mb-6 group-hover:text-slate-100 transition-colors">Είσαι {type.title};</h3>
-                      <p className="text-slate-400 text-base mb-6 group-hover:text-slate-300 transition-colors">{type.description}</p>
-                      <div className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${type.gradient} flex items-center justify-center mb-6 shadow-lg shadow-${type.color}-500/30 group-hover:scale-110 transition-transform duration-300`}>
-                        <Icon className="w-12 h-12 text-white" />
+                {userTypes.map((type) => {
+                  const Icon = type.icon;
+                  return (
+                    <button
+                      key={type.id}
+                      onClick={() => handleUserTypeSelect(type.id)}
+                      className="group relative bg-gradient-to-br from-slate-800/50 to-slate-800/20 backdrop-blur-sm rounded-3xl p-12 border border-slate-700/50 hover:border-slate-600 transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/10 hover:-translate-y-2"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-br from-slate-800/0 to-slate-800/0 group-hover:from-slate-800/50 group-hover:to-slate-800/20 rounded-3xl transition-all duration-300" />
+                      <div className="relative z-10 flex flex-col items-center text-center">
+                        <h3 className="text-2xl font-bold mb-6 group-hover:text-slate-100 transition-colors">Είσαι {type.title};</h3>
+                        <p className="text-slate-400 text-base mb-6 group-hover:text-slate-300 transition-colors">{type.description}</p>
+                        <div className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${type.gradient} flex items-center justify-center mb-6 shadow-lg`}>
+                          <Icon className="w-12 h-12 text-white" />
+                        </div>
+                        <div className="flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <ChevronRight className="w-6 h-6 text-violet-400 group-hover:translate-x-1 transition-transform" />
+                        </div>
                       </div>
-                      <div className="flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <ChevronRight className="w-6 h-6 text-violet-400 group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Coach Card - After Categories */}
+            {/* Coach Card - Intro */}
             <div className="max-w-4xl mx-auto mb-12">
               <div className="text-center mb-8">
-                <p className="text-lg leading-relaxed bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent font-semibold mb-4">Θες καθοδήγηση από εξειδικευμένο σύμβουλο καριέρας; Είσαι μόνο ένα click μακριά</p>
+                <p className="text-lg leading-relaxed bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent font-semibold mb-4">
+                  Θες καθοδήγηση από εξειδικευμένο σύμβουλο καριέρας; Είσαι μόνο ένα click μακριά
+                </p>
                 <div className="flex justify-center animate-bounce">
                   <ChevronRight className="w-8 h-8 text-violet-400 rotate-90" />
                 </div>
@@ -292,14 +335,10 @@ export default function EPythia() {
                     <div className="w-40 h-40 rounded-2xl bg-gradient-to-br from-cyan-400 via-violet-400 to-fuchsia-400 p-1 shadow-xl shadow-violet-500/30 flex items-center justify-center">
                       <div className="w-full h-full rounded-2xl bg-slate-900 flex items-center justify-center">
                         <svg className="w-24 h-24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          {/* Head */}
                           <circle cx="50" cy="30" r="15" fill="#a78bfa"/>
-                          {/* Body */}
                           <rect x="35" y="45" width="30" height="35" rx="5" fill="#818cf8"/>
-                          {/* Arms */}
                           <rect x="20" y="50" width="15" height="8" rx="4" fill="#a78bfa"/>
                           <rect x="65" y="50" width="15" height="8" rx="4" fill="#a78bfa"/>
-                          {/* Tie */}
                           <polygon points="50,45 47,52 53,52" fill="#06b6d4"/>
                         </svg>
                       </div>
@@ -513,10 +552,34 @@ export default function EPythia() {
                       Ο Χάρτης της Καριέρας σου
                     </h2>
                   </div>
-                  <div className="text-slate-200 text-lg leading-relaxed whitespace-pre-wrap space-y-4">
-                    {recommendations.split('\n\n').map((paragraph, idx) => (
-                      <p key={idx} className="text-slate-300">{paragraph}</p>
-                    ))}
+                  <div className="prose prose-invert prose-slate max-w-none text-lg leading-relaxed">
+                    <ReactMarkdown
+                      components={{
+                        h3: ({ node, ...props }) => (
+                          <h3
+                            className="mt-8 mb-3 text-2xl font-bold text-cyan-300 border-b border-slate-700 pb-1 flex items-center gap-2"
+                            {...props}
+                          >
+                            <Sparkles className="w-5 h-5 text-violet-400" />
+                            {props.children}
+                          </h3>
+                        ),
+                        p: ({ node, ...props }) => (
+                          <p className="mb-3 text-slate-300" {...props} />
+                        ),
+                        li: ({ node, ...props }) => (
+                          <li className="mb-1 flex gap-2" {...props}>
+                            <span className="mt-2 w-1.5 h-1.5 rounded-full bg-violet-400 flex-shrink-0" />
+                            <span>{props.children}</span>
+                          </li>
+                        ),
+                        strong: ({ node, ...props }) => (
+                          <strong className="text-slate-100" {...props} />
+                        ),
+                      }}
+                    >
+                      {recommendations}
+                    </ReactMarkdown>
                   </div>
                 </div>
 
@@ -585,18 +648,10 @@ export default function EPythia() {
                     Εξέτασε Άλλη Διαδρομή
                   </button>
                   <button
-                    onClick={() => {
-                      const text = `e-Pythia Καθοδήγηση Καριέρας για ${contactInfo.firstName}\n\n${recommendations}`;
-                      const blob = new Blob([text], { type: 'text/plain' });
-                      const url = window.URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = `career-guidance-${Date.now()}.txt`;
-                      a.click();
-                    }}
+                    onClick={handleDownloadPdf}
                     className="px-8 py-3 rounded-xl font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-all duration-200"
                   >
-                    Κάντε Download τα Αποτελέσματά μου
+                    Κατέβασε τα Αποτελέσματά μου (PDF)
                   </button>
                 </div>
               </div>
