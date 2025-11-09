@@ -1,5 +1,18 @@
 import React, { useState } from 'react';
-import { Compass, GraduationCap, Briefcase, ChevronRight, ArrowLeft, Sparkles, Eye, Check, Calendar, MessageCircle, Star, ArrowRight } from 'lucide-react';
+import { 
+  Compass, 
+  GraduationCap, 
+  Briefcase, 
+  ChevronRight, 
+  ArrowLeft, 
+  Sparkles, 
+  Eye, 
+  Check, 
+  Calendar, 
+  MessageCircle, 
+  Star 
+} from 'lucide-react';
+
 
 export default function EPythia() {
   const [step, setStep] = useState('welcome');
