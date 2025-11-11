@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+αimport React, { useState, useRef } from 'react';
 import { 
   Compass, 
   GraduationCap, 
@@ -25,7 +25,6 @@ export default function EPythia() {
   const [recommendations, setRecommendations] = useState('');
   const [loading, setLoading] = useState(false);
   const [showLeadPopup, setShowLeadPopup] = useState(false);
-  const [gdprAccepted, setGdprAccepted] = useState(true); // Default accept
   const [leadSaved, setLeadSaved] = useState(false);
 
   const resultsRef = useRef(null);
@@ -300,8 +299,8 @@ export default function EPythia() {
       const recommendations = data.message;
       setRecommendations(recommendations);
 
-      // 2. Σώσε το lead ΜΟΝΟ αν ο χρήστης συμφώνησε με GDPR ΚΑΙ δεν έχει σωθεί ήδη
-      if (gdprAccepted === true && !leadSaved) {
+      // 2. Σώσε το lead - αφού δεν έχουμε GDPR popup, αποδεχόμαστε πάντα
+      if (!leadSaved) {
         setLeadSaved(true); // Prevent duplicate saves
         
         await fetch('/.netlify/functions/save-lead', {
