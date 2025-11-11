@@ -25,8 +25,7 @@ export default function EPythia() {
   const [recommendations, setRecommendations] = useState('');
   const [loading, setLoading] = useState(false);
   const [showLeadPopup, setShowLeadPopup] = useState(false);
-  const [showGdprPopup, setShowGdprPopup] = useState(false);
-  const [gdprAccepted, setGdprAccepted] = useState(null);
+  const [gdprAccepted, setGdprAccepted] = useState(true); // Default accept
   const [leadSaved, setLeadSaved] = useState(false);
 
   const resultsRef = useRef(null);
@@ -186,21 +185,20 @@ export default function EPythia() {
     } else if (type === 'highschool') {
       setStep('highschool-type-select');
     } else {
-      // For university, show GDPR first
-      setShowGdprPopup(true);
+      setStep('questionnaire');
     }
   };
 
   const handleEmployeeSectorSelect = (sector) => {
     setEmployeeSector(sector);
     setFormData({});
-    setShowGdprPopup(true);
+    setStep('questionnaire');
   };
 
   const handleHighschoolTypeSelect = (type) => {
     setHighschoolType(type);
     setFormData({});
-    setShowGdprPopup(true);
+    setStep('questionnaire');
   };
 
   const handleInputChange = (questionId, value) => {
@@ -226,8 +224,8 @@ export default function EPythia() {
   const handleGdprAccept = (accepted) => {
     setGdprAccepted(accepted);
     setShowGdprPopup(false);
-    // Always go to questionnaire, whether they accept or not
-    setStep('questionnaire');
+    // Always stay on questionnaire regardless of choice
+    // The choice only affects whether data is saved later
   };
 
   const generatePrompt = () => {
@@ -348,7 +346,6 @@ export default function EPythia() {
     setFormData({});
     setContactInfo({ firstName: '', lastName: '', email: '' });
     setRecommendations('');
-    setGdprAccepted(null);
     setLeadSaved(false);
   };
 
@@ -376,41 +373,6 @@ export default function EPythia() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-200">
-      {/* GDPR Banner - Non-blocking, Bottom Fixed */}
-      {showGdprPopup && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 p-4 bg-gradient-to-r from-slate-800 via-slate-800 to-slate-900 border-t border-slate-700 shadow-2xl pointer-events-none">
-          <div className="max-w-7xl mx-auto px-6 flex items-center justify-between gap-4 pointer-events-auto">
-            <div className="flex-1">
-              <h4 className="text-lg font-bold text-slate-100 mb-2">🔒 Προστασία Δεδομένων</h4>
-              <p className="text-sm text-slate-400 mb-3">
-                Θα χρησιμοποιήσουμε τα στοιχεία σου για σώσιμο αποτελεσμάτων, βελτίωση σέρβις και προσφορές. 
-                <span className="block text-xs text-slate-500 mt-1">
-                  Σύμφωνα με το{' '}
-                  <button type="button" onClick={() => window.open('https://gdpr-info.eu/', '_blank')} className="text-violet-400 hover:text-violet-300 underline cursor-pointer">GDPR</button>
-                  {' '}| {' '}
-                  <button type="button" onClick={() => window.open('#', '_blank')} className="text-violet-400 hover:text-violet-300 underline cursor-pointer">Πολιτική Ιδιωτικότητας</button>
-                </span>
-              </p>
-            </div>
-
-            <div className="flex gap-3 flex-shrink-0">
-              <button
-                onClick={() => handleGdprAccept(false)}
-                className="px-6 py-2 rounded-lg border border-slate-600 hover:bg-slate-700 text-slate-200 font-semibold transition-all text-sm"
-              >
-                Όχι
-              </button>
-              <button
-                onClick={() => handleGdprAccept(true)}
-                className="px-6 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-violet-500 text-white font-semibold hover:opacity-90 transition-all text-sm"
-              >
-                ✓ Αποδέχομαι
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Lead Saved Popup */}
       {showLeadPopup && (
         <div className="fixed inset-0 flex items-end justify-center p-4 z-50 pointer-events-none">
@@ -504,6 +466,97 @@ export default function EPythia() {
                     </button>
                   );
                 })}
+              </div>
+
+              {/* Coach Card - Intro */}
+              <div className="max-w-4xl mx-auto mb-12 mt-20">
+                <div className="text-center mb-8">
+                  <p className="text-lg leading-relaxed bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent font-semibold mb-4">
+                    Θες καθοδήγηση από εξειδικευμένο σύμβουλο καριέρας; Είσαι μόνο ένα click μακριά
+                  </p>
+                  <div className="flex justify-center animate-bounce">
+                    <ChevronRight className="w-8 h-8 text-violet-400 rotate-90" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Coach Card */}
+              <div className="max-w-4xl mx-auto bg-gradient-to-br from-slate-800/50 to-slate-800/20 rounded-2xl p-10 border border-slate-700/50 backdrop-blur-sm">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+                  {/* Illustration */}
+                  <div className="flex justify-center md:justify-start">
+                    <div className="relative">
+                      <div className="w-40 h-40 rounded-2xl bg-gradient-to-br from-cyan-400 via-violet-400 to-fuchsia-400 p-1 shadow-xl shadow-violet-500/30 flex items-center justify-center">
+                        <div className="w-full h-full rounded-2xl bg-slate-900 flex items-center justify-center">
+                          <svg className="w-24 h-24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="50" cy="30" r="15" fill="#a78bfa"/>
+                            <rect x="35" y="45" width="30" height="35" rx="5" fill="#818cf8"/>
+                            <rect x="20" y="50" width="15" height="8" rx="4" fill="#a78bfa"/>
+                            <rect x="65" y="50" width="15" height="8" rx="4" fill="#a78bfa"/>
+                            <polygon points="50,45 47,52 53,52" fill="#06b6d4"/>
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-cyan-500 to-violet-500 rounded-lg px-3 py-1 text-xs font-bold text-white shadow-lg flex items-center gap-1">
+                        <Star className="w-3 h-3 fill-current" />
+                        Εξειδικευμένος
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bio & CTA */}
+                  <div className="md:col-span-2">
+                    <h3 className="text-2xl font-bold mb-3">Θα σου Βρούμε τον Ιδανικό Σύμβουλό</h3>
+                    <p className="text-slate-300 mb-4">
+                      Μετά την ανάλυση AI, θα σε συνδέσουμε με έναν <span className="font-semibold">εξειδικευμένο σύμβουλο καριέρας</span> που έχει ήδη ζήσει το ίδιο path που σκέφτεσαι τώρα.
+                    </p>
+                    <p className="text-slate-400 text-sm mb-6">
+                      Ο σύμβουλός σου θα έχει:
+                    </p>
+                    
+                    <div className="space-y-3 mb-6">
+                      <div className="flex items-start gap-3">
+                        <Check className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm text-slate-300">Πραγματική εμπειρία στον κλάδο που σε ενδιαφέρει</span>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Check className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm text-slate-300">Ήδη έχει κάνει τη μετάβαση που εσύ σκέφτεσαι</span>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Check className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm text-slate-300">Θα σου δώσει πρακτικές και εφαρμόσιμες συμβουλές</span>
+                      </div>
+                    </div>
+
+                    {/* Contact Button */}
+                    <div className="mb-6 flex justify-start">
+                      <a 
+                        href={`mailto:pythiacontact@gmail.com?subject=Ενδιαφέρομαι για Coaching e-Pythia&body=Γεία,\n\nΘα ήθελα να μάθω περισσότερα για το πρόγραμμα coaching και να βρω τον κατάλληλο σύμβουλο για το προφίλ μου.\n\nΑναμένω να ακούσω από εσάς!`}
+                        className="inline-flex items-center gap-2 px-6 py-2 rounded-lg bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 text-white text-sm font-bold hover:opacity-90 transition-all duration-300 shadow-lg shadow-violet-500/30"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        Ενδιαφέρομαι
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Trust Indicators */}
+                <div className="grid grid-cols-3 gap-4 mt-8 pt-8 border-t border-slate-700">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-cyan-400 mb-1">50+</div>
+                    <div className="text-xs text-slate-400">Εξειδικευμένοι Σύμβουλοι & Ειδικότητες</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-violet-400 mb-1">95%</div>
+                    <div className="text-xs text-slate-400">Ικανοποιημένοι Χρήστες</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-fuchsia-400 mb-1">10+</div>
+                    <div className="text-xs text-slate-400">Χρόνια Εμπειρίας</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
