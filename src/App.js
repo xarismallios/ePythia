@@ -221,13 +221,6 @@ export default function EPythia() {
     }
   };
 
-  const handleGdprAccept = (accepted) => {
-    setGdprAccepted(accepted);
-    setShowGdprPopup(false);
-    // Always stay on questionnaire regardless of choice
-    // The choice only affects whether data is saved later
-  };
-
   const generatePrompt = () => {
     const typeLabels = {
       highschool_epal: 'μαθητής ΕΠΑΛ που σχεδιάζει την επαγγελματική του διαδρομή',
