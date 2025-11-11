@@ -12,8 +12,7 @@ import {
   MessageCircle, 
   Star,
   Building2,
-  TrendingUp,
-  X
+  TrendingUp
 } from 'lucide-react';
 
 export default function EPythia() {
@@ -387,9 +386,9 @@ export default function EPythia() {
                 Θα χρησιμοποιήσουμε τα στοιχεία σου για σώσιμο αποτελεσμάτων, βελτίωση σέρβις και προσφορές. 
                 <span className="block text-xs text-slate-500 mt-1">
                   Σύμφωνα με το{' '}
-                  <a href="#" className="text-violet-400 hover:text-violet-300 underline">GDPR</a>
+                  <button type="button" onClick={() => window.open('https://gdpr-info.eu/', '_blank')} className="text-violet-400 hover:text-violet-300 underline cursor-pointer">GDPR</button>
                   {' '}| {' '}
-                  <a href="#" className="text-violet-400 hover:text-violet-300 underline">Πολιτική Ιδιωτικότητας</a>
+                  <button type="button" onClick={() => window.open('#', '_blank')} className="text-violet-400 hover:text-violet-300 underline cursor-pointer">Πολιτική Ιδιωτικότητας</button>
                 </span>
               </p>
             </div>
