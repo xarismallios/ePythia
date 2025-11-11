@@ -1,4 +1,4 @@
-αimport React, { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Compass, 
   GraduationCap, 
