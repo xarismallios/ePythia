@@ -219,14 +219,6 @@ export default function EPythia() {
     }
   };
 
-  const generatePrompt = () => {
-    const typeLabels = {
-      highschool_epal: 'μαθητής ΕΠΑΛ που σχεδιάζει την επαγγελματική του διαδρομή',
-      highschool_general: 'μαθητής Γενικού Λυκείου που χρειάζεται καθοδήγηση για τη κατεύθυνση και τις σπουδές',
-      university: 'φοιτητής που σχεδιάζει το επόμενο επαγγελματικό βήμα',
-      employee_public: 'επαγγελματίας του δημόσιου τομέα που εξερευνά νέες ευκαιρίες ανέλιξης',
-      employee_private: 'επαγγελματίας του ιδιωτικού τομέα που εξερευνά νέες ευκαιρίες ανέλιξης'
-    };
 
     let userTypeKey = userType;
     if (userType === 'highschool') {
