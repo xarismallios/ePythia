@@ -25,6 +25,7 @@ export default function EPythia() {
   const [recommendations, setRecommendations] = useState('');
   const [loading, setLoading] = useState(false);
   const [showLeadPopup, setShowLeadPopup] = useState(false);
+  const [leadSaved, setLeadSaved] = useState(false);
 
   const resultsRef = useRef(null);
 
@@ -337,6 +338,7 @@ export default function EPythia() {
     setFormData({});
     setContactInfo({ firstName: '', lastName: '', email: '' });
     setRecommendations('');
+    setLeadSaved(false);
   };
 
   const isFormComplete = () => {
