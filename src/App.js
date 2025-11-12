@@ -219,43 +219,89 @@ export default function EPythia() {
     }
   };
 
+  const generatePrompt = () => {
+    const typeLabels = {
+      highschool_epal: 'μαθητής ΕΠΑΛ που σχεδιάζει την επαγγελματική του διαδρομή',
+      highschool_general: 'μαθητής Γενικού Λυκείου που χρειάζεται καθοδήγηση για τη κατεύθυνση και τις σπουδές',
+      university: 'φοιτητής που σχεδιάζει το επόμενο επαγγελματικό βήμα',
+      employee_public: 'επαγγελματίας του δημόσιου τομέα που εξερευνά νέες ευκαιρίες ανέλιξης',
+      employee_private: 'επαγγελματίας του ιδιωτικού τομέα που εξερευνά νέες ευκαιρίες ανέλιξης'
+    };
+
+    let userTypeKey = userType;
+    if (userType === 'highschool') {
+      userTypeKey = `highschool_${highschoolType}`;
+    } else if (userType === 'employee') {
+      userTypeKey = `employee_${employeeSector}`;
+    }
+
+    const currentQuestions = userType === 'highschool' 
+      ? (highschoolType === 'epal' ? questions.highschool_epal : questions.highschool_general)
+      : userType === 'employee' 
+      ? (employeeSector === 'public' ? questions.employee_public : questions.employee_private)
+      : questions[userType];
+
+    let prompt = `Είσαι η e-Pythia, ένας έμπειρος και εξειδικευμένος σύμβουλος καριέρας. Ένας/μια ${typeLabels[userTypeKey]} χρειάζεται τη δική σου καθοδήγηση σχετικά με τα επόμενα βήματα.\n\nΠροφίλ Χρήστη:\n`;
+    
+    currentQuestions.forEach((q) => {
+      const answer = formData[q.id] || 'Δεν δόθηκε απάντηση';
+      prompt += `- ${q.label}: ${answer}\n`;
+    });
+
+    if (userType === 'highschool' && highschoolType === 'epal') {
+      prompt += `\nΠαράσχε καθαρή καθοδήγηση με:\n1. 1-2 ειδικότητες ΕΠΑΛ που ταιριάζουν (και γιατί κάθε μία ταιριάζει). Βάλε μέσα pros & cons, προοπτικές εργασίας και πλάνο εξέλιξης\n2. Εναλλακτικές επαγγελματικές διαδρομές (και άλλα ΕΠΑΛ ή άλλες επιλογές)\n3. Δεξιότητες που πρέπει να αναπτύξει (soft skills, τεχνικές δεξιότητες, γλώσσες)\n4. Επόμενα βήματα (πρακτική, σύντομη πρόγνωση)\n\nBe encouraging, συγκεκριμένο και ρεαλιστικό. Κάνε τις προτάσεις σας με βάση την ελληνική αγορά εργασίας.`;
+    } else if (userType === 'highschool' && highschoolType === 'general') {
+      prompt += `\nΠαράσχε:\n1. 1-2 κορυφαίες κατευθύνσεις/σπουδές που ταιριάζουν (και γιατί κάθε μία ταιριάζει). Βάλε μέσα pros & cons και προοπτικές\n2. Εναλλακτικές κατευθύνσεις/σχολές\n3. Δεξιότητες που πρέπει να αναπτύξει πριν ή κατά τις σπουδές\n4. Επόμενα βήματα (προετοιμασία για Πανελλήνιες, επιλογή σχολών, κλπ)\n\nBe specific με ονόματα σχολών (ΑΕΙ/ΤΕΙ), κατευθύνσεων και επαγγελματικών πεδίων.`;
+    } else if (userType === 'university') {
+      prompt += `\nΠαράσχε:\n1. Επαγγελματικές θέσεις ή μεταπτυχιακά προγράμματα\n2. Κλάδους που εκτιμούν τις δεξιότητές του\n3. Βήματα μετάβασης\n4. Δεξιότητες που πρέπει να αναπτύξει\n\nBe specific με τίτλους θέσεων.`;
+    } else if (userType === 'employee' && employeeSector === 'public') {
+      prompt += `\nΠαράσχε:\n1. Επόμενα επαγγελματικά βήματα στο δημόσιο τομέα ή εναλλακτικές διαδρομές\n2. Πώς να αξιοποιήσει την εμπειρία και τα credentials του\n3. Δεξιότητες που πρέπει να αναπτύξει\n4. Σχέδιο δράσης για τους επόμενους 6-12 μήνες\n\nBe strategic και λάβε υπόψιν τα ειδικά χαρακτηριστικά του δημόσιου τομέα.`;
+    } else if (userType === 'employee' && employeeSector === 'private') {
+      prompt += `\nΠαράσχε:\n1. Επόμενα επαγγελματικά βήματα (αλλαγή εταιρείας, κλάδου, ή νέα αρχή)\n2. Πώς να αξιοποιήσει την εμπειρία του\n3. Δεξιότητες που πρέπει να αναπτύξει\n4. Σχέδιο δράσης για τους επόμενους 6-12 μήνες\n\nBe strategic και δυναμικό.`;
+    }
+
+    prompt += `
+\n\nΔώσε την απάντηση σε δομημένη μορφή με markdown, με ξεκάθαρες ενότητες:
+### 1. Κορυφαίες επιλογές
+### 2. Εναλλακτικές διαδρομές
+### 3. Δεξιότητες που πρέπει να αναπτύξει
+### 4. Επόμενα βήματα
+
+Μην προσθέτεις χαιρετισμούς (π.χ. "Φίλε/η μαθητή/τρια") ούτε καταληκτικές γενικές παραγράφους.
+Μην ξαναγράφεις τίτλο με το όνομα e-Pythia ή το όνομα του χρήστη. Ξεκίνα κατευθείαν από το πρώτο section.
+`.trim();
+
+    return prompt;
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
     setStep('results');
 
     try {
-      // Simulate LLM response with markdown formatted output
-      const recommendations = `### 1. Κορυφαίες επιλογές
-Με βάση τις απαντήσεις σου, σε συνιστώ να ακολουθήσεις ένα δομημένο σχέδιο ανάπτυξης που ταιριάζει στο προφίλ και τους στόχους σου.
+      // 1. Πάρε τις συστάσεις από το LLM
+      const response = await fetch('/.netlify/functions/epythia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: generatePrompt() }),
+      });
 
-- **Πρώτη επιλογή**: Ανάλυσε τις δυνατότητές σου και τον τρόπο που μπορείς να τις αξιοποιήσεις
-- **Δεύτερη επιλογή**: Εξερεύνησε εναλλακτικές διαδρομές που θα σου δώσουν ευελιξία
+      const data = await response.json();
 
-### 2. Εναλλακτικές διαδρομές
-Δεν υπάρχει ένας μόνο δρόμος. Θεώρησε επίσης:
+      if (!response.ok) {
+        console.error('Server error:', data);
+        setRecommendations('Συγγνώμη, υπήρξε σφάλμα κατά την επεξεργασία του αιτήματός σου.');
+        setLoading(false);
+        return;
+      }
 
-- Κατάρτιση και συνεχή μάθηση
-- Δικτύωση με επαγγελματίες στο χώρο
-- Πρακτική εμπειρία σε διαφορετικά πεδία
-
-### 3. Δεξιότητες που πρέπει να αναπτύξει
-Εστίασε στις ακόλουθες περιοχές:
-
-- Τεχνικές δεξιότητες ανάλογα με το χώρο
-- Soft skills (επικοινωνία, ηγεσία, λύση προβλημάτων)
-- Ξένες γλώσσες (κυρίως Αγγλικά)
-
-### 4. Επόμενα βήματα
-Σχέδιο δράσης για τους επόμενους μήνες:
-
-- **Μήνες 1-2**: Έρευνα και προετοιμασία
-- **Μήνες 3-4**: Πρακτική εφαρμογή και δικτύωση
-- **Μήνες 5-6**: Αξιολόγηση προόδου και προσαρμογή`;
-
+      const recommendations = data.message;
       setRecommendations(recommendations);
 
-      // Save lead to Supabase
-      try {
+      // 2. Σώσε το lead - αφού δεν έχουμε GDPR popup, αποδεχόμαστε πάντα
+      if (!leadSaved) {
+        setLeadSaved(true); // Prevent duplicate saves
+        
         await fetch('/.netlify/functions/save-lead', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -268,17 +314,15 @@ export default function EPythia() {
             highschoolType: highschoolType || null,
             results: recommendations
           })
-        });
-      } catch (err) {
-        console.error('Lead save error:', err);
+        }).catch(err => console.error('Lead save error:', err));
+
+        // 3. Δείξε το popup ευχαριστιών
+        setShowLeadPopup(true);
+        setTimeout(() => setShowLeadPopup(false), 4000);
       }
 
-      // Show popup
-      setShowLeadPopup(true);
-      setTimeout(() => setShowLeadPopup(false), 4000);
-
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Fetch failed:', error);
       setRecommendations('Συγγνώμη, υπήρξε σφάλμα. Παρακαλώ δοκίμασε ξανά.');
     } finally {
       setLoading(false);
