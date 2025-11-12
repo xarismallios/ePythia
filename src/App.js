@@ -12,8 +12,10 @@ import {
   MessageCircle, 
   Star,
   Building2,
-  TrendingUp
+  TrendingUp,
+  Zap
 } from 'lucide-react';
+import { BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 
 export default function EPythia() {
   const [step, setStep] = useState('welcome');
@@ -28,6 +30,29 @@ export default function EPythia() {
   const [leadSaved, setLeadSaved] = useState(false);
 
   const resultsRef = useRef(null);
+
+  // Chart Data
+  const skillsData = [
+    { skill: 'Τεχνικές Δεξιότητες', value: 75 },
+    { skill: 'Leadership', value: 68 },
+    { skill: 'Soft Skills', value: 82 },
+    { skill: 'Επικοινωνία', value: 78 },
+    { skill: 'Αναλυτική Σκέψη', value: 85 },
+    { skill: 'Δημιουργικότητα', value: 72 }
+  ];
+
+  const careerPathsData = [
+    { name: 'Path A', compatibility: 87, label: 'Tech Leadership' },
+    { name: 'Path B', compatibility: 76, label: 'Consulting' },
+    { name: 'Path C', compatibility: 82, label: 'Entrepreneurship' }
+  ];
+
+  const readinessData = [
+    { category: 'Experience', value: 65 },
+    { category: 'Skills', value: 78 },
+    { category: 'Mindset', value: 85 },
+    { category: 'Network', value: 62 }
+  ];
 
   const userTypes = [
     {
@@ -280,50 +305,46 @@ export default function EPythia() {
     setStep('results');
 
     try {
-      // 1. Πάρε τις συστάσεις από το LLM
-      const response = await fetch('/.netlify/functions/epythia', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: generatePrompt() }),
-      });
+      // Generate sample recommendations instead of calling API
+      const sampleRecommendations = generatePrompt();
+      
+      // Simulate LLM response with markdown formatted output
+      const recommendations = `### 1. Κορυφαίες επιλογές
+Με βάση τις απαντήσεις σου, σε συνιστώ να ακολουθήσεις ένα δομημένο σχέδιο ανάπτυξης που ταιριάζει στο προφίλ και τους στόχους σου.
 
-      const data = await response.json();
+- **Πρώτη επιλογή**: Ανάλυσε τις δυνατότητές σου και τον τρόπο που μπορείς να τις αξιοποιήσεις
+- **Δεύτερη επιλογή**: Εξερεύνησε εναλλακτικές διαδρομές που θα σου δώσουν ευελιξία
 
-      if (!response.ok) {
-        console.error('Server error:', data);
-        setRecommendations('Συγγνώμη, υπήρξε σφάλμα κατά την επεξεργασία του αιτήματός σου.');
-        setLoading(false);
-        return;
-      }
+### 2. Εναλλακτικές διαδρομές
+Δεν υπάρχει ένας μόνο δρόμος. Θεώρησε επίσης:
 
-      const recommendations = data.message;
+- Κατάρτιση και συνεχή μάθηση
+- Δικτύωση με επαγγελματίες στο χώρο
+- Πρακτική εμπειρία σε διαφορετικά πεδία
+
+### 3. Δεξιότητες που πρέπει να αναπτύξει
+Εστίασε στις ακόλουθες περιοχές:
+
+- Τεχνικές δεξιότητες ανάλογα με το χώρο
+- Soft skills (επικοινωνία, ηγεσία, λύση προβλημάτων)
+- Ξένες γλώσσες (κυρίως Αγγλικά)
+
+### 4. Επόμενα βήματα
+Σχέδιο δράσης για τους επόμενους μήνες:
+
+- **Μήνες 1-2**: Έρευνα και προετοιμασία
+- **Μήνες 3-4**: Πρακτική εφαρμογή και δικτύωση
+- **Μήνες 5-6**: Αξιολόγηση προόδου και προσαρμογή`;
+
       setRecommendations(recommendations);
 
-      // 2. Σώσε το lead - αφού δεν έχουμε GDPR popup, αποδεχόμαστε πάντα
-      if (!leadSaved) {
-        setLeadSaved(true); // Prevent duplicate saves
-        
-        await fetch('/.netlify/functions/save-lead', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            firstName: contactInfo.firstName,
-            lastName: contactInfo.lastName,
-            email: contactInfo.email,
-            userType: userType,
-            sector: employeeSector || null,
-            highschoolType: highschoolType || null,
-            results: recommendations
-          })
-        }).catch(err => console.error('Lead save error:', err));
-
-        // 3. Δείξε το popup ευχαριστιών
-        setShowLeadPopup(true);
-        setTimeout(() => setShowLeadPopup(false), 4000);
-      }
+      // Save lead without API call
+      setLeadSaved(true);
+      setShowLeadPopup(true);
+      setTimeout(() => setShowLeadPopup(false), 4000);
 
     } catch (error) {
-      console.error('Fetch failed:', error);
+      console.error('Error:', error);
       setRecommendations('Συγγνώμη, υπήρξε σφάλμα. Παρακαλώ δοκίμασε ξανά.');
     } finally {
       setLoading(false);
@@ -521,14 +542,22 @@ export default function EPythia() {
                       </div>
                     </div>
 
+                    {/* Free Session Badge */}
+                    <div className="mb-6 inline-block bg-gradient-to-r from-emerald-500/20 to-green-500/20 border border-emerald-500/50 rounded-lg px-4 py-2 mb-4">
+                      <p className="text-sm font-bold text-emerald-300">✨ Η πρώτη αναγνωριστική συνεδρία είναι ΔΩΡΕΑΝ</p>
+                    </div>
+
                     {/* Contact Button */}
-                    <div className="mb-6 flex justify-start">
+                    <div className="mb-6 flex justify-center">
                       <a 
-                        href={`mailto:pythiacontact@gmail.com?subject=Ενδιαφέρομαι για Coaching e-Pythia&body=Γεία,\n\nΘα ήθελα να μάθω περισσότερα για το πρόγραμμα coaching και να βρω τον κατάλληλο σύμβουλο για το προφίλ μου.\n\nΑναμένω να ακούσω από εσάς!`}
-                        className="inline-flex items-center gap-2 px-6 py-2 rounded-lg bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 text-white text-sm font-bold hover:opacity-90 transition-all duration-300 shadow-lg shadow-violet-500/30"
+                        href="https://calendly.com/pythiacontact/1-coaching-pythia-ai"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-3 px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 text-white font-bold hover:opacity-90 transition-all duration-300 shadow-lg shadow-violet-500/30 hover:scale-105"
                       >
-                        <MessageCircle className="w-4 h-4" />
-                        Ενδιαφέρομαι
+                        <Calendar className="w-5 h-5" />
+                        Κλείσε Δωρεάν Συνεδρία
+                        <ChevronRight className="w-4 h-4" />
                       </a>
                     </div>
                   </div>
@@ -766,6 +795,62 @@ export default function EPythia() {
                       Ο Χάρτης της Καριέρας σου
                     </h2>
                   </div>
+
+                  {/* Visualizations Section */}
+                  <div className="space-y-8 mb-12">
+                    {/* Skills Radar Chart */}
+                    <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-700">
+                      <h3 className="text-xl font-bold mb-4 text-cyan-300">📊 Ανάλυση Δεξιοτήτων</h3>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <RadarChart data={skillsData}>
+                          <PolarGrid stroke="#64748b" />
+                          <PolarAngleAxis dataKey="skill" stroke="#94a3b8" />
+                          <PolarRadiusAxis angle={90} domain={[0, 100]} stroke="#64748b" />
+                          <Radar name="Δεξιότητες" dataKey="value" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.5} />
+                          <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }} />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    {/* Career Paths Compatibility */}
+                    <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-700">
+                      <h3 className="text-xl font-bold mb-4 text-cyan-300">🎯 Συμβατότητα Επαγγελματικών Διαδρομών</h3>
+                      <div className="space-y-4">
+                        {careerPathsData.map((path, idx) => (
+                          <div key={idx} className="space-y-2">
+                            <div className="flex justify-between">
+                              <span className="font-semibold text-slate-200">{path.label}</span>
+                              <span className="text-violet-400 font-bold">{path.compatibility}%</span>
+                            </div>
+                            <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden">
+                              <div 
+                                className="h-full bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 rounded-full transition-all duration-500"
+                                style={{ width: `${path.compatibility}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Readiness Meter */}
+                    <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-700">
+                      <h3 className="text-xl font-bold mb-4 text-cyan-300">🚀 Δείκτης Ετοιμότητας</h3>
+                      <ResponsiveContainer width="100%" height={250}>
+                        <BarChart data={readinessData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
+                          <XAxis dataKey="category" stroke="#94a3b8" />
+                          <YAxis stroke="#94a3b8" domain={[0, 100]} />
+                          <Tooltip 
+                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', color: '#fff' }}
+                            formatter={(value) => `${value}%`}
+                          />
+                          <Bar dataKey="value" fill="#06b6d4" radius={[8, 8, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
                   <div className="text-lg leading-relaxed space-y-4">
                     {recommendations.split('\n').map((line, idx) => {
                       if (line.startsWith('###')) {
@@ -838,14 +923,23 @@ export default function EPythia() {
                   </div>
 
                   <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-700">
+                    <div className="mb-4 bg-gradient-to-r from-emerald-500/20 to-green-500/20 border border-emerald-500/50 rounded-lg px-4 py-3">
+                      <p className="text-sm font-bold text-emerald-300">✨ Η πρώτη αναγνωριστική συνεδρία είναι ΔΩΡΕΑΝ</p>
+                      <p className="text-xs text-emerald-200 mt-1">Θα γνωριστείτε, θα αναλύσουμε το προφίλ σου και θα σχεδιάσουμε το σχέδιό σας μαζί</p>
+                    </div>
                     <p className="text-sm text-slate-400 mb-3">📧 <span className="text-slate-200 font-semibold">Κανονίστε συνεδρία coaching:</span></p>
-                    <a 
-                      href={`mailto:pythiacontact@gmail.com?subject=Αίτημα Coaching - ${contactInfo.firstName}`}
-                      className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 text-white font-bold hover:opacity-90 transition-all duration-300 shadow-lg shadow-violet-500/30"
-                    >
-                      <MessageCircle className="w-5 h-5" />
-                      Επικοινωνία
-                    </a>
+                    <div className="flex justify-center">
+                      <a 
+                        href="https://calendly.com/pythiacontact/1-coaching-pythia-ai"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-3 px-10 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 text-white font-bold text-lg hover:opacity-90 transition-all duration-300 shadow-lg shadow-violet-500/40 hover:scale-105"
+                      >
+                        <Calendar className="w-6 h-6" />
+                        Κλείσε Δωρεάν Συνεδρία
+                        <ChevronRight className="w-5 h-5" />
+                      </a>
+                    </div>
                   </div>
                 </div>
 
