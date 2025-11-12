@@ -219,53 +219,6 @@ export default function EPythia() {
     }
   };
 
-
-    let userTypeKey = userType;
-    if (userType === 'highschool') {
-      userTypeKey = `highschool_${highschoolType}`;
-    } else if (userType === 'employee') {
-      userTypeKey = `employee_${employeeSector}`;
-    }
-
-    const currentQuestions = userType === 'highschool' 
-      ? (highschoolType === 'epal' ? questions.highschool_epal : questions.highschool_general)
-      : userType === 'employee' 
-      ? (employeeSector === 'public' ? questions.employee_public : questions.employee_private)
-      : questions[userType];
-
-    let prompt = `Είσαι η e-Pythia, ένας έμπειρος και εξειδικευμένος σύμβουλος καριέρας. Ένας/μια ${typeLabels[userTypeKey]} χρειάζεται τη δική σου καθοδήγηση σχετικά με τα επόμενα βήματα.\n\nΠροφίλ Χρήστη:\n`;
-    
-    currentQuestions.forEach((q) => {
-      const answer = formData[q.id] || 'Δεν δόθηκε απάντηση';
-      prompt += `- ${q.label}: ${answer}\n`;
-    });
-
-    if (userType === 'highschool' && highschoolType === 'epal') {
-      prompt += `\nΠαράσχε καθαρή καθοδήγηση με:\n1. 1-2 ειδικότητες ΕΠΑΛ που ταιριάζουν (και γιατί κάθε μία ταιριάζει). Βάλε μέσα pros & cons, προοπτικές εργασίας και πλάνο εξέλιξης\n2. Εναλλακτικές επαγγελματικές διαδρομές (και άλλα ΕΠΑΛ ή άλλες επιλογές)\n3. Δεξιότητες που πρέπει να αναπτύξει (soft skills, τεχνικές δεξιότητες, γλώσσες)\n4. Επόμενα βήματα (πρακτική, σύντομη πρόγνωση)\n\nBe encouraging, συγκεκριμένο και ρεαλιστικό. Κάνε τις προτάσεις σας με βάση την ελληνική αγορά εργασίας.`;
-    } else if (userType === 'highschool' && highschoolType === 'general') {
-      prompt += `\nΠαράσχε:\n1. 1-2 κορυφαίες κατευθύνσεις/σπουδές που ταιριάζουν (και γιατί κάθε μία ταιριάζει). Βάλε μέσα pros & cons και προοπτικές\n2. Εναλλακτικές κατευθύνσεις/σχολές\n3. Δεξιότητες που πρέπει να αναπτύξει πριν ή κατά τις σπουδές\n4. Επόμενα βήματα (προετοιμασία για Πανελλήνιες, επιλογή σχολών, κλπ)\n\nBe specific με ονόματα σχολών (ΑΕΙ/ΤΕΙ), κατευθύνσεων και επαγγελματικών πεδίων.`;
-    } else if (userType === 'university') {
-      prompt += `\nΠαράσχε:\n1. Επαγγελματικές θέσεις ή μεταπτυχιακά προγράμματα\n2. Κλάδους που εκτιμούν τις δεξιότητές του\n3. Βήματα μετάβασης\n4. Δεξιότητες που πρέπει να αναπτύξει\n\nBe specific με τίτλους θέσεων.`;
-    } else if (userType === 'employee' && employeeSector === 'public') {
-      prompt += `\nΠαράσχε:\n1. Επόμενα επαγγελματικά βήματα στο δημόσιο τομέα ή εναλλακτικές διαδρομές\n2. Πώς να αξιοποιήσει την εμπειρία και τα credentials του\n3. Δεξιότητες που πρέπει να αναπτύξει\n4. Σχέδιο δράσης για τους επόμενους 6-12 μήνες\n\nBe strategic και λάβε υπόψιν τα ειδικά χαρακτηριστικά του δημόσιου τομέα.`;
-    } else if (userType === 'employee' && employeeSector === 'private') {
-      prompt += `\nΠαράσχε:\n1. Επόμενα επαγγελματικά βήματα (αλλαγή εταιρείας, κλάδου, ή νέα αρχή)\n2. Πώς να αξιοποιήσει την εμπειρία του\n3. Δεξιότητες που πρέπει να αναπτύξει\n4. Σχέδιο δράσης για τους επόμενους 6-12 μήνες\n\nBe strategic και δυναμικό.`;
-    }
-
-    prompt += `
-\n\nΔώσε την απάντηση σε δομημένη μορφή με markdown, με ξεκάθαρες ενότητες:
-### 1. Κορυφαίες επιλογές
-### 2. Εναλλακτικές διαδρομές
-### 3. Δεξιότητες που πρέπει να αναπτύξει
-### 4. Επόμενα βήματα
-
-Μην προσθέτεις χαιρετισμούς (π.χ. "Φίλε/η μαθητή/τρια") ούτε καταληκτικές γενικές παραγράφους.
-Μην ξαναγράφεις τίτλο με το όνομα e-Pythia ή το όνομα του χρήστη. Ξεκίνα κατευθείαν από το πρώτο section.
-`.trim();
-
-    return prompt;
-  };
-
   const handleSubmit = async () => {
     setLoading(true);
     setStep('results');
