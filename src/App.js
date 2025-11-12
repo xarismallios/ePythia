@@ -12,10 +12,8 @@ import {
   MessageCircle, 
   Star,
   Building2,
-  TrendingUp,
-  Zap
+  TrendingUp
 } from 'lucide-react';
-import { BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 
 export default function EPythia() {
   const [step, setStep] = useState('welcome');
@@ -30,29 +28,6 @@ export default function EPythia() {
   const [leadSaved, setLeadSaved] = useState(false);
 
   const resultsRef = useRef(null);
-
-  // Chart Data
-  const skillsData = [
-    { skill: 'Τεχνικές Δεξιότητες', value: 75 },
-    { skill: 'Leadership', value: 68 },
-    { skill: 'Soft Skills', value: 82 },
-    { skill: 'Επικοινωνία', value: 78 },
-    { skill: 'Αναλυτική Σκέψη', value: 85 },
-    { skill: 'Δημιουργικότητα', value: 72 }
-  ];
-
-  const careerPathsData = [
-    { name: 'Path A', compatibility: 87, label: 'Tech Leadership' },
-    { name: 'Path B', compatibility: 76, label: 'Consulting' },
-    { name: 'Path C', compatibility: 82, label: 'Entrepreneurship' }
-  ];
-
-  const readinessData = [
-    { category: 'Experience', value: 65 },
-    { category: 'Skills', value: 78 },
-    { category: 'Mindset', value: 85 },
-    { category: 'Network', value: 62 }
-  ];
 
   const userTypes = [
     {
@@ -82,14 +57,14 @@ export default function EPythia() {
     {
       id: 'public',
       title: 'Δημόσιος Τομέας',
-      description: 'Δημόσια υπηρεσία, δημοτική, περιφερειακή διοίκηση, εκπαίδευση, υγεία',
+      description: 'Υπουργείο / Κεντρική Διοίκηση, Δήμος / Περιφέρεια, Εκπαίδευση (Δάσκαλος, Καθηγητής, Πανεπιστήμιο), Υγεία (Νοσοκομεία, ΕΟΠΥΥ, Δημόσια Υγεία), Ασφαλιστικός / Κοινωνικός Οργανισμός (ΕΦΚΑ, ΟΑΕΔ), ΔΕΚΟ (ενέργεια, μεταφορές, τηλεπικοινωνίες), Ένοπλες Δυνάμεις / Σώματα Ασφαλείας, Άλλος δημόσιος φορέας / ανεξάρτητη αρχή',
       icon: Building2,
       gradient: 'from-blue-500 to-indigo-500',
     },
     {
       id: 'private',
       title: 'Ιδιωτικός Τομέας',
-      description: 'Εταιρείες, startups, ΜΜΕ, επιχειρηματικές δραστηριότητες',
+      description: 'Τεχνολογία / Πληροφορική (IT, Software, Data), Τραπεζικός / Χρηματοοικονομικός τομέας, Marketing / Διαφήμιση / Επικοινωνία, Βιομηχανία / Παραγωγή, Κατασκευές / Τεχνικές Εταιρείες, Εμπόριο / Retail / E-commerce, Συμβουλευτικές Υπηρεσίες (Consulting), Μεταφορές / Logistics, Τουρισμός / Εστίαση, Ενέργεια / Ναυτιλία, Startups & Επιχειρηματικές Δραστηριότητες',
       icon: TrendingUp,
       gradient: 'from-orange-500 to-red-500',
     }
@@ -106,7 +81,7 @@ export default function EPythia() {
     {
       id: 'general',
       title: 'Γενικό Λύκειο',
-      description: 'Θετική/Τεχνολογική/Ανθρωπιστική κατεύθυνση για πανεπιστημιακές σπουδές',
+      description: 'Θετική/Τεχνολογική/Οικονομικά/Ανθρωπιστική κατεύθυνση για πανεπιστημιακές σπουδές',
       icon: GraduationCap,
       gradient: 'from-purple-500 to-pink-500',
     }
@@ -115,19 +90,19 @@ export default function EPythia() {
   const questions = {
     highschool_epal: [
       { id: 'workshop_interest', label: 'Ποιο εργαστήριο σε ενδιαφέρει περισσότερο;', type: 'select', options: ['Μηχανολογία', 'Ηλεκτρολογία', 'Πληροφορική/IT', 'Τουρισμός/Ξενοδοχείο', 'Οικοδομικά', 'Αυτοκινήτων', 'Κομμωτική/Αισθητικά', 'Ξυλουργική', 'Άλλο'] },
-      { id: 'practical_learning', label: 'Προτιμάς να μαθαίνεις κάνοντας (χέρια);', type: 'select', options: ['Πολύ προτίμησή μου', 'Λίγο', 'Προτιμώ τη θεωρία'] },
-      { id: 'manual_skills', label: 'Πόσο δεξιός είσαι στη χρήση εργαλείων/χεριών;', type: 'select', options: ['Πολύ δεξιός', 'Μέτρια', 'Δεν με ενδιαφέρει'] },
-      { id: 'immediate_work', label: 'Σημαντικό για σένα να εργάσεις αμέσως μετά;', type: 'select', options: ['Πολύ σημαντικό', 'Ίσως και το πτυχίο', 'Μπορώ να περιμένω'] },
-      { id: 'salary_motivation', label: 'Πόσο σημαντική είναι η ικανότητα να κερδίσεις σύντομα;', type: 'select', options: ['Πολύ σημαντική', 'Σημαντική', 'Δεν με απασχολεί'] },
-      { id: 'international', label: 'Θα ήθελες να δουλέψεις στο εξωτερικό με τα credentials σου;', type: 'select', options: ['Ναι, απόλυτα', 'Ίσως', 'Όχι'] },
-      { id: 'business_idea', label: 'Έχεις σκεφτεί να ξεκινήσεις δική σου δραστηριότητα;', type: 'select', options: ['Ναι, έχω ιδέα', 'Μπορεί κάποτε', 'Όχι'] },
+      { id: 'practical_learning', label: 'Προτιμάς να μαθαίνεις κάνοντας (χέρια);', type: 'select', options: ['Αρκετά', 'Λίγο', 'Προτιμώ τη θεωρία'] },
+      { id: 'manual_skills', label: 'Πόσο καλός/καλή είσαι στη χρήση εργαλείων/χεριών;', type: 'select', options: ['Πολύ', 'Μέτρια', 'Δεν με ενδιαφέρει'] },
+      { id: 'immediate_work', label: 'Πόσο σημαντικό για σένα είναι να εργαστείς αμέσως μετά;', type: 'select', options: ['Πολύ σημαντικό', 'Με νοιάζει πιο πολύ το πτυχίο/χαρτί', 'Μπορώ να περιμένω'] },
+      { id: 'salary_motivation', label: 'Πόσο σημαντικό είναι για σένα να πετύχεις στο κλάδο σύντομα;', type: 'select', options: ['Πολύ σημαντικό', 'Σημαντικό', 'Δεν με απασχολεί'] },
+      { id: 'international', label: 'Θα ήθελες να δουλέψεις στο εξωτερικό;', type: 'select', options: ['Ναι', 'Ίσως', 'Όχι'] },
+      { id: 'business_idea', label: 'Έχεις σκεφτεί να ξεκινήσεις δική σου επιχείρηση;', type: 'select', options: ['Ναι, θα το ήθελα', 'Μπορεί κάποτε', 'Όχι'] },
       { id: 'further_studies', label: 'Θα ήθελες να κάνεις περαιτέρω σπουδές μετά το ΕΠΑΛ;', type: 'select', options: ['Ναι, ΑΕΙ/ΤΕΙ', 'Μήπως ειδικότητα', 'Όχι, θέλω να δουλέψω'] },
       { id: 'personality_work', label: 'Πώς θα περιέγραφες τον εαυτό σου στο χώρο εργασίας;', type: 'select', options: ['Ανεξάρτητος', 'Συνεργατικός', 'Αρχηγικός', 'Λεπτομερής'] },
-      { id: 'continuous_learning', label: 'Προθυμία να ενημερώνεσαι με νέες τεχνολογίες;', type: 'select', options: ['Πολύ ενδιαφέρον', 'Ίσως', 'Δεν με απασχολεί'] },
-      { id: 'team_preference', label: 'Προτιμάς μικρές ή μεγάλες ομάδες εργασίας;', type: 'select', options: ['Μικρές και άμεσες', 'Δε με νοιάζει', 'Μεγάλες δομημένες'] },
+      { id: 'continuous_learning', label: 'Προθυμία να ενημερώνεσαι με νέες τεχνολογίες;', type: 'select', options: ['Πολύ', 'Ίσως', 'Δεν με απασχολεί'] },
+      { id: 'team_preference', label: 'Προτιμάς μικρές ή μεγάλες ομάδες εργασίας;', type: 'select', options: ['Μικρές και γρήγορες', 'Δε με νοιάζει', 'Μεγάλες δομημένες'] },
       { id: 'job_satisfaction', label: 'Τι σε κάνει ικανοποιημένο σε μια δουλειά;', type: 'select', options: ['Αποτέλεσμα που φαίνεται', 'Καλή αμοιβή', 'Σταθερότητα', 'Δημιουργικότητα'] },
       { id: 'challenges', label: 'Πώς αντιμετωπίζεις τα προβλήματα;', type: 'select', options: ['Με πρακτική σκέψη', 'Ζητώ βοήθεια', 'Αποφεύγω το πρόβλημα'] },
-      { id: 'specialization_plan', label: 'Έχεις ήδη σκεφτεί ποια ειδικότητα ΕΠΑΛ σε ενδιαφέρει;', type: 'text', placeholder: 'π.χ. Μηχανολογία, Ηλεκτρολογία, κλπ' },
+      { id: 'specialization_plan', label: 'Σε ενδιαφέρει η τρέχουσα ειδικότητά σου; Τι θα άλλαζες και με ποιά;', type: 'text', placeholder: 'π.χ. Μηχανολογία, Ηλεκτρολογία, κλπ' },
       { id: 'vision_35', label: '(Ανοιχτή) Πες με δικά σου λόγια πώς φαντάζεσαι τον εαυτό σου στα 35.', type: 'textarea', placeholder: 'Γράψε τη δική σου απάντηση...' }
     ],
     highschool_general: [
@@ -154,7 +129,7 @@ export default function EPythia() {
       { id: 'priority', label: 'Ποιο από τα παρακάτω σου φαίνεται πιο σημαντικό;', type: 'select', options: ['Επαγγελματική σταθερότητα', 'Ευκαιρίες εξέλιξης', 'Δημιουργικότητα', 'Ελευθερία'] },
       { id: 'experience', label: 'Έχεις ήδη επαγγελματική εμπειρία;', type: 'select', options: ['Ναι', 'Όχι'] },
       { id: 'motivation', label: 'Τι σε κινητοποιεί περισσότερο να δουλέψεις;', type: 'select', options: ['Πρόκληση', 'Αναγνώριση', 'Επίδραση', 'Οικονομική άνεση'] },
-      { id: 'work_style', label: 'Πώς προτιμάς να δουλεύεις;', type: 'select', options: ['Σε δομημένο αυστηρό περιβάλλον', 'Σε startup φάση', 'Ως freelancer'] },
+      { id: 'work_style', label: 'Πώς προτιμάς να δουλεύεις;', type: 'select', options: ['Σε δομημένο αυστηρό περιβάλλον','Σε έρευνα/εργαστήριο', 'Σε startup περιβάλλον', 'Ως freelancer'] },
       { id: 'field', label: 'Ποιο πεδίο σε τραβάει περισσότερο τώρα;', type: 'select', options: ['Τεχνολογία/Data', 'Marketing/Επικοινωνία', 'Business/Finance','Έρευνα/Research', 'Πωλήσεις/Εξυπηρέτηση','Δημόσιος τομέας/ΜΚΟ'] },
       { id: 'asset', label: 'Ποιο είναι το βασικό σου asset;', type: 'select', options: ['Αναλυτική σκέψη', 'Δημιουργικότητα', 'Οργάνωση', 'Διαπροσωπική επικοινωνία'] },
       { id: 'presentation', label: 'Πόσο άνετα νιώθεις να παρουσιάζεις ή να δικτυώνεσαι;', type: 'select', options: ['Πολύ', 'Μέτρια', 'Ελάχιστα'] },
@@ -176,7 +151,7 @@ export default function EPythia() {
       { id: 'move_direction', label: 'Θα σε ενδιέφερε μετακίνηση σε άλλο τμήμα;', type: 'select', options: ['Μέσα στο ίδιο φορέα', 'Σε άλλο δημόσιο φορέα', 'Όχι, προτιμώ ιδιωτικό'] },
       { id: 'public_impact', label: 'Πόσο σημαντικό για σένα είναι το κοινωφελές;', type: 'select', options: ['Πολύ σημαντικό', 'Κάπως σημαντικό', 'Δεν με απασχολεί'] },
       { id: 'private_consideration', label: 'Έχεις σκεφτεί ποτέ να πας στον ιδιωτικό τομέα;', type: 'select', options: ['Ναι, σοβαρά', 'Ίσως', 'Όχι, θέλω δημόσιο'] },
-      { id: 'skills_gap', label: 'Τι δεξιότητες σου λείπουν;', type: 'select', options: ['Digital/IT', 'Leadership', 'Foreign languages', 'Project management', 'Άλλο'] },
+      { id: 'skills_gap', label: 'Τι δεξιότητες σου λείπουν;', type: 'select', options: ['Η/Υ', 'Ξένες Γλώσσες', 'Διαχείριση Έργου', 'Λογιστική/Οικονομικά', 'Άλλο'] },
       { id: 'future_role', label: 'Τι ρόλο φαντάζεσαι στο μέλλον;', type: 'select', options: ['Ανέλιξη στο δημόσιο', 'Αλλαγή τομέα', 'Ίδια δραστηριότητα', 'Freelancing/Consulting'] },
       { id: 'pension_concerns', label: 'Πόσο σε ανησυχεί η συνταξιοδότηση;', type: 'select', options: ['Πολύ', 'Μέτρια', 'Δεν με απασχολεί'] },
       { id: 'ideal_scenario', label: '(Ανοιχτή) Περιέγραψε το ιδανικό "επόμενο κεφάλαιο" σου.', type: 'textarea', placeholder: 'Γράψε τη δική σου απάντηση...' }
@@ -184,14 +159,14 @@ export default function EPythia() {
     employee_private: [
       { id: 'experience', label: 'Πόσα χρόνια εμπειρίας έχεις στον ιδιωτικό τομέα;', type: 'select', options: ['0-2 χρόνια', '3-5 χρόνια', '6-10 χρόνια', '10+ χρόνια'] },
       { id: 'industry', label: 'Σε ποιον κλάδο δραστηριοποιείσαι;', type: 'select', options: ['Τεχνολογία/IT', 'Τραπεζική/Finance', 'Marketing/Διαφήμιση', 'Πωλήσεις', 'Σύμβουλος/Consulting', 'Κατασκευή', 'E-commerce', 'Άλλο'] },
-      { id: 'company_size', label: 'Σε ποιου μεγέθους εταιρεία δουλεύεις;', type: 'select', options: ['Startup (0-50)', 'SME (50-250)', 'Mid-size (250-1000)', 'Large corporation (1000+)'] },
+      { id: 'company_size', label: 'Σε ποιου μεγέθους εταιρεία δουλεύεις;', type: 'select', options: ['Startup (0-50)', 'Μικρή (50-250)', 'Μεσαία(250-1000)', 'Μεγάλη(1000+)'] },
       { id: 'satisfaction', label: 'Πόσο ικανοποιημένος είσαι από τη δουλειά σου;', type: 'select', options: ['Πολύ', 'Μέτρια', 'Καθόλου'] },
       { id: 'change_reason', label: 'Τι σε ωθεί να σκεφτείς αλλαγή;', type: 'select', options: ['Burnout', 'Χαμηλές απολαβές', 'Κακή κουλτούρα', 'Μικρή εξέλιξη', 'Νέο ενδιαφέρον', 'Δε σε απασχολεί'] },
       { id: 'fulfillment', label: 'Ποιο στοιχείο της δουλειάς σε γεμίζει ακόμα;', type: 'select', options: ['Η ομάδα', 'Η πρόκληση', 'Η αμοιβή', 'Η ευθύνη', 'Κανένα'] },
       { id: 'next_step', label: 'Τι θα ήθελες να κάνεις μετά;', type: 'select', options: ['Ίδια ρόλο αλλά άλλη εταιρεία', 'Νέα ρόλο στην ίδια εταιρεία', 'Αλλαγή κλάδου', 'Freelancer/Self-employed', 'Δημόσιος τομέας'] },
       { id: 'salary_expectation', label: 'Ποια είναι η προτεραιότητα σου για τον μισθό;', type: 'select', options: ['Αύξηση', 'Ισορροπία με άλλα', 'Δεν είναι πρωτεύουσα'] },
       { id: 'work_life_balance', label: 'Πώς αισθάνεσαι για την εργασία από το σπίτι;', type: 'select', options: ['Προτιμώ remote', 'Hybrid είναι ιδανικό', 'Προτιμώ γραφείο'] },
-      { id: 'skills_to_develop', label: 'Ποιες δεξιότητες θες να αναπτύξεις;', type: 'select', options: ['Leadership', 'AI/Machine Learning', 'Data Analytics', 'Soft skills', 'Άλλο'] },
+      { id: 'skills_to_develop', label: 'Ποιες δεξιότητες θες να αναπτύξεις;', type: 'select', options: ['Leadership', 'AI/Machine Learning','Marketing/Finance', 'Data Analytics', 'Soft skills', 'Άλλο'] },
       { id: 'risk_appetite', label: 'Πώς νιώθεις με τη στρατηγική του ρίσκου;', type: 'select', options: ['Αγοράζω τις προκλήσεις', 'Προσεκτικά', 'Αποφεύγω τον ρίσκο'] },
       { id: 'career_timeline', label: 'Πόσο επείγουσα είναι η αλλαγή;', type: 'select', options: ['Άμεσα', 'Στους επόμενους 6 μήνες', 'Στον επόμενο χρόνο', 'Δεν είμαι σίγουρος'] },
       { id: 'international', label: 'Θα σε ενδιέφερε θέση στο εξωτερικό;', type: 'select', options: ['Ναι, σίγουρα', 'Ίσως', 'Όχι'] },
@@ -288,7 +263,7 @@ export default function EPythia() {
 
     prompt += `
 \n\nΔώσε την απάντηση σε δομημένη μορφή με markdown, με ξεκάθαρες ενότητες:
-### 1. Κορυφαίες επιλογές
+### 1. Κορυφαία επιλογή
 ### 2. Εναλλακτικές διαδρομές
 ### 3. Δεξιότητες που πρέπει να αναπτύξει
 ### 4. Επόμενα βήματα
@@ -312,8 +287,8 @@ export default function EPythia() {
       const recommendations = `### 1. Κορυφαίες επιλογές
 Με βάση τις απαντήσεις σου, σε συνιστώ να ακολουθήσεις ένα δομημένο σχέδιο ανάπτυξης που ταιριάζει στο προφίλ και τους στόχους σου.
 
-- **Πρώτη επιλογή**: Ανάλυσε τις δυνατότητές σου και τον τρόπο που μπορείς να τις αξιοποιήσεις
-- **Δεύτερη επιλογή**: Εξερεύνησε εναλλακτικές διαδρομές που θα σου δώσουν ευελιξία
+- 1.Πρώτη επιλογή: Ανάλυσε τις δυνατότητές σου και τον τρόπο που μπορείς να τις αξιοποιήσεις
+- 2.Δεύτερη επιλογή: Εξερεύνησε εναλλακτικές διαδρομές που θα σου δώσουν ευελιξία
 
 ### 2. Εναλλακτικές διαδρομές
 Δεν υπάρχει ένας μόνο δρόμος. Θεώρησε επίσης:
@@ -332,9 +307,9 @@ export default function EPythia() {
 ### 4. Επόμενα βήματα
 Σχέδιο δράσης για τους επόμενους μήνες:
 
-- **Μήνες 1-2**: Έρευνα και προετοιμασία
-- **Μήνες 3-4**: Πρακτική εφαρμογή και δικτύωση
-- **Μήνες 5-6**: Αξιολόγηση προόδου και προσαρμογή`;
+- Μήνες 1-2: Έρευνα και προετοιμασία
+- Μήνες 3-4: Πρακτική εφαρμογή και δικτύωση
+- Μήνες 5-6: Αξιολόγηση προόδου και προσαρμογή`;
 
       setRecommendations(recommendations);
 
@@ -544,7 +519,7 @@ export default function EPythia() {
 
                     {/* Free Session Badge */}
                     <div className="mb-6 inline-block bg-gradient-to-r from-emerald-500/20 to-green-500/20 border border-emerald-500/50 rounded-lg px-4 py-2 mb-4">
-                      <p className="text-sm font-bold text-emerald-300">✨ Η πρώτη αναγνωριστική συνεδρία είναι ΔΩΡΕΑΝ</p>
+                      <p className="text-sm font-bold text-emerald-300"> Η πρώτη αναγνωριστική συνεδρία είναι ΔΩΡΕΑΝ</p>
                     </div>
 
                     {/* Contact Button */}
@@ -796,61 +771,7 @@ export default function EPythia() {
                     </h2>
                   </div>
 
-                  {/* Visualizations Section */}
-                  <div className="space-y-8 mb-12">
-                    {/* Skills Radar Chart */}
-                    <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-700">
-                      <h3 className="text-xl font-bold mb-4 text-cyan-300">📊 Ανάλυση Δεξιοτήτων</h3>
-                      <ResponsiveContainer width="100%" height={300}>
-                        <RadarChart data={skillsData}>
-                          <PolarGrid stroke="#64748b" />
-                          <PolarAngleAxis dataKey="skill" stroke="#94a3b8" />
-                          <PolarRadiusAxis angle={90} domain={[0, 100]} stroke="#64748b" />
-                          <Radar name="Δεξιότητες" dataKey="value" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.5} />
-                          <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }} />
-                        </RadarChart>
-                      </ResponsiveContainer>
-                    </div>
-
-                    {/* Career Paths Compatibility */}
-                    <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-700">
-                      <h3 className="text-xl font-bold mb-4 text-cyan-300">🎯 Συμβατότητα Επαγγελματικών Διαδρομών</h3>
-                      <div className="space-y-4">
-                        {careerPathsData.map((path, idx) => (
-                          <div key={idx} className="space-y-2">
-                            <div className="flex justify-between">
-                              <span className="font-semibold text-slate-200">{path.label}</span>
-                              <span className="text-violet-400 font-bold">{path.compatibility}%</span>
-                            </div>
-                            <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden">
-                              <div 
-                                className="h-full bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 rounded-full transition-all duration-500"
-                                style={{ width: `${path.compatibility}%` }}
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Readiness Meter */}
-                    <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-700">
-                      <h3 className="text-xl font-bold mb-4 text-cyan-300">🚀 Δείκτης Ετοιμότητας</h3>
-                      <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={readinessData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
-                          <XAxis dataKey="category" stroke="#94a3b8" />
-                          <YAxis stroke="#94a3b8" domain={[0, 100]} />
-                          <Tooltip 
-                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', color: '#fff' }}
-                            formatter={(value) => `${value}%`}
-                          />
-                          <Bar dataKey="value" fill="#06b6d4" radius={[8, 8, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-
+                  {/* Recommendations Section */}
                   <div className="text-lg leading-relaxed space-y-4">
                     {recommendations.split('\n').map((line, idx) => {
                       if (line.startsWith('###')) {
@@ -924,7 +845,7 @@ export default function EPythia() {
 
                   <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-700">
                     <div className="mb-4 bg-gradient-to-r from-emerald-500/20 to-green-500/20 border border-emerald-500/50 rounded-lg px-4 py-3">
-                      <p className="text-sm font-bold text-emerald-300">✨ Η πρώτη αναγνωριστική συνεδρία είναι ΔΩΡΕΑΝ</p>
+                      <p className="text-sm font-bold text-emerald-300"> Η πρώτη αναγνωριστική συνεδρία είναι ΔΩΡΕΑΝ </p>
                       <p className="text-xs text-emerald-200 mt-1">Θα γνωριστείτε, θα αναλύσουμε το προφίλ σου και θα σχεδιάσουμε το σχέδιό σας μαζί</p>
                     </div>
                     <p className="text-sm text-slate-400 mb-3">📧 <span className="text-slate-200 font-semibold">Κανονίστε συνεδρία coaching:</span></p>
