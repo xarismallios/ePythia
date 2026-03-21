@@ -15,8 +15,46 @@ import {
   Building2,
   TrendingUp,
   RefreshCw,
-  Quote
+  Quote,
+  Download,
+  Share2,
+  Lightbulb,
+  Wrench,
+  BarChart2,
+  Trophy,
+  Heart
 } from 'lucide-react';
+
+// ── Persona config ──────────────────────────────────────────────
+const personaConfig = {
+  innovator: { icon: Lightbulb, gradient: 'from-cyan-500 to-blue-500', bg: 'from-cyan-500/15 to-blue-500/10', border: 'border-cyan-500/30', ring: 'ring-cyan-500/40' },
+  builder:   { icon: Wrench,    gradient: 'from-green-500 to-emerald-500', bg: 'from-green-500/15 to-emerald-500/10', border: 'border-green-500/30', ring: 'ring-green-500/40' },
+  analyst:   { icon: BarChart2, gradient: 'from-violet-500 to-purple-500', bg: 'from-violet-500/15 to-purple-500/10', border: 'border-violet-500/30', ring: 'ring-violet-500/40' },
+  leader:    { icon: Trophy,    gradient: 'from-orange-500 to-amber-500', bg: 'from-orange-500/15 to-amber-500/10', border: 'border-orange-500/30', ring: 'ring-orange-500/40' },
+  explorer:  { icon: Compass,   gradient: 'from-fuchsia-500 to-pink-500', bg: 'from-fuchsia-500/15 to-pink-500/10', border: 'border-fuchsia-500/30', ring: 'ring-fuchsia-500/40' },
+  caregiver: { icon: Heart,     gradient: 'from-rose-500 to-red-500', bg: 'from-rose-500/15 to-red-500/10', border: 'border-rose-500/30', ring: 'ring-rose-500/40' },
+};
+
+// ── Parse persona & action steps from AI response ───────────────
+const parseAIResponse = (text) => {
+  let recommendations = text;
+  let persona = null;
+  let actionSteps = [];
+
+  const personaMatch = text.match(/---PERSONA_START---([\s\S]*?)---PERSONA_END---/);
+  if (personaMatch) {
+    try { persona = JSON.parse(personaMatch[1].trim()); } catch {}
+    recommendations = recommendations.replace(/---PERSONA_START---[\s\S]*?---PERSONA_END---/, '').trim();
+  }
+
+  const actionsMatch = text.match(/---ACTIONS_START---([\s\S]*?)---ACTIONS_END---/);
+  if (actionsMatch) {
+    try { actionSteps = JSON.parse(actionsMatch[1].trim()).steps || []; } catch {}
+    recommendations = recommendations.replace(/---ACTIONS_START---[\s\S]*?---ACTIONS_END---/, '').trim();
+  }
+
+  return { recommendations, persona, actionSteps };
+};
 
 export default function EPythia() {
   const [step, setStep] = useState('welcome');
@@ -26,6 +64,11 @@ export default function EPythia() {
   const [formData, setFormData] = useState({});
   const [contactInfo, setContactInfo] = useState({ firstName: '', lastName: '', email: '' });
   const [recommendations, setRecommendations] = useState('');
+  const [persona, setPersona] = useState(null);
+  const [actionSteps, setActionSteps] = useState([]);
+  const [checkedSteps, setCheckedSteps] = useState({});
+  const [rating, setRating] = useState(0);
+  const [shareSuccess, setShareSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showLeadPopup, setShowLeadPopup] = useState(false);
   const [leadSaved, setLeadSaved] = useState(false);
@@ -34,62 +77,22 @@ export default function EPythia() {
 
   const resultsRef = useRef(null);
 
+  // ── Static data ────────────────────────────────────────────────
+
   const userTypes = [
-    {
-      id: 'highschool',
-      title: 'Μαθητής',
-      description: 'Ανακάλυψε ποιά σχολή σου ταιριάζει καλύτερα',
-      icon: GraduationCap,
-      gradient: 'from-cyan-500 to-blue-500',
-    },
-    {
-      id: 'university',
-      title: 'Φοιτητής',
-      description: "Βρες το ιδανικό μεταπτυχιακό ή επαγγελματικό ξεκίνημα",
-      icon: Compass,
-      gradient: 'from-violet-500 to-purple-500',
-    },
-    {
-      id: 'employee',
-      title: 'Επαγγελματίας',
-      description: 'Εξερεύνησε το επόμενο βήμα της καριέρας σου',
-      icon: Briefcase,
-      gradient: 'from-fuchsia-500 to-pink-500',
-    }
+    { id: 'highschool', title: 'Μαθητής', description: 'Ανακάλυψε ποιά σχολή σου ταιριάζει καλύτερα', icon: GraduationCap, gradient: 'from-cyan-500 to-blue-500' },
+    { id: 'university', title: 'Φοιτητής', description: 'Βρες το ιδανικό μεταπτυχιακό ή επαγγελματικό ξεκίνημα', icon: Compass, gradient: 'from-violet-500 to-purple-500' },
+    { id: 'employee', title: 'Επαγγελματίας', description: 'Εξερεύνησε το επόμενο βήμα της καριέρας σου', icon: Briefcase, gradient: 'from-fuchsia-500 to-pink-500' }
   ];
 
   const employeeSectors = [
-    {
-      id: 'public',
-      title: 'Δημόσιος Τομέας',
-      description: 'Δημόσια υπηρεσία, δημοτική, περιφερειακή διοίκηση, εκπαίδευση, υγεία',
-      icon: Building2,
-      gradient: 'from-blue-500 to-indigo-500',
-    },
-    {
-      id: 'private',
-      title: 'Ιδιωτικός Τομέας',
-      description: 'Εταιρείες, startups, ΜΜΕ, επιχειρηματικές δραστηριότητες',
-      icon: TrendingUp,
-      gradient: 'from-orange-500 to-red-500',
-    }
+    { id: 'public', title: 'Δημόσιος Τομέας', description: 'Δημόσια υπηρεσία, δημοτική, περιφερειακή διοίκηση, εκπαίδευση, υγεία', icon: Building2, gradient: 'from-blue-500 to-indigo-500' },
+    { id: 'private', title: 'Ιδιωτικός Τομέας', description: 'Εταιρείες, startups, ΜΜΕ, επιχειρηματικές δραστηριότητες', icon: TrendingUp, gradient: 'from-orange-500 to-red-500' }
   ];
 
   const highschoolTypes = [
-    {
-      id: 'epal',
-      title: 'ΕΠΑΛ',
-      description: 'Εκπαίδευση με εργαστήρια, πρακτικές δεξιότητες και άμεση εργασιακή δυνατότητα',
-      icon: Briefcase,
-      gradient: 'from-green-500 to-emerald-500',
-    },
-    {
-      id: 'general',
-      title: 'Γενικό Λύκειο',
-      description: 'Θετική/Τεχνολογική/Ανθρωπιστική κατεύθυνση για πανεπιστημιακές σπουδές',
-      icon: GraduationCap,
-      gradient: 'from-purple-500 to-pink-500',
-    }
+    { id: 'epal', title: 'ΕΠΑΛ', description: 'Εκπαίδευση με εργαστήρια, πρακτικές δεξιότητες και άμεση εργασιακή δυνατότητα', icon: Briefcase, gradient: 'from-green-500 to-emerald-500' },
+    { id: 'general', title: 'Γενικό Λύκειο', description: 'Θετική/Τεχνολογική/Ανθρωπιστική κατεύθυνση για πανεπιστημιακές σπουδές', icon: GraduationCap, gradient: 'from-purple-500 to-pink-500' }
   ];
 
   const questions = {
@@ -111,9 +114,9 @@ export default function EPythia() {
       { id: 'vision_35', label: 'Πες με δικά σου λόγια πώς φαντάζεσαι τον εαυτό σου στα 35.', type: 'textarea', placeholder: 'Γράψε τη δική σου απάντηση...' }
     ],
     highschool_general: [
-      { id: 'subject', label: 'Ποιο μάθημα σου αρέσει περισσότερο;', type: 'select', options: ['Μαθηματικά', 'Φυσική','Χημεία/Βιολογία','Προγραμματισμός','Μαθήματα Οικονομικών & Διοίκησης', 'Τέχνη/Γραφιστικά', 'Ιστορία/Γλώσσες','Κοινωνικά/Ανθρωπιστικά', 'Φυσική Αγωγή'] },
+      { id: 'subject', label: 'Ποιο μάθημα σου αρέσει περισσότερο;', type: 'select', options: ['Μαθηματικά', 'Φυσική', 'Χημεία/Βιολογία', 'Προγραμματισμός', 'Μαθήματα Οικονομικών & Διοίκησης', 'Τέχνη/Γραφιστικά', 'Ιστορία/Γλώσσες', 'Κοινωνικά/Ανθρωπιστικά', 'Φυσική Αγωγή'] },
       { id: 'learning', label: 'Πώς προτιμάς να μαθαίνεις;', type: 'select', options: ['Μέσα από θεωρία', 'Μέσα από πράξη', 'Συνδυαστικά'] },
-      { id: 'freetime', label: 'Όταν έχεις ελεύθερο χρόνο, τι κάνεις πιο συχνά;', type: 'select', options: ['Παίζω/χακάρω στον υπολογιστή', 'Ζωγραφίζω/φτιάχνω βίντεο', 'Διαβάζω/ψάχνω για ιδέες','Κάνω Αθλήματα','Είμαι με κόσμο'] },
+      { id: 'freetime', label: 'Όταν έχεις ελεύθερο χρόνο, τι κάνεις πιο συχνά;', type: 'select', options: ['Παίζω/χακάρω στον υπολογιστή', 'Ζωγραφίζω/φτιάχνω βίντεο', 'Διαβάζω/ψάχνω για ιδέες', 'Κάνω Αθλήματα', 'Είμαι με κόσμο'] },
       { id: 'success', label: 'Τι σε κάνει να αισθάνεσαι πετυχημένος;', type: 'select', options: ['Όταν τα καταφέρνω στα δύσκολα προβλήματα', 'Όταν βοηθάω άλλους', 'Όταν με αναγνωρίζουν', 'Όταν μαθαίνω κάτι καινούριο'] },
       { id: 'adaptation', label: 'Πόσο εύκολα προσαρμόζεσαι σε νέα πράγματα;', type: 'select', options: ['Πολύ εύκολα', 'Ανάλογα τη περίσταση', 'Δύσκολα'] },
       { id: 'technology', label: 'Τι ρόλο έχει η τεχνολογία στη ζωή σου;', type: 'select', options: ['Κεντρικό', 'Βοηθητικό', 'Ελάχιστο'] },
@@ -135,7 +138,7 @@ export default function EPythia() {
       { id: 'experience', label: 'Έχεις ήδη επαγγελματική εμπειρία;', type: 'select', options: ['Ναι', 'Όχι'] },
       { id: 'motivation', label: 'Τι σε κινητοποιεί περισσότερο να δουλέψεις;', type: 'select', options: ['Πρόκληση', 'Αναγνώριση', 'Επίδραση', 'Οικονομική άνεση'] },
       { id: 'work_style', label: 'Πώς προτιμάς να δουλεύεις;', type: 'select', options: ['Σε δομημένο αυστηρό περιβάλλον', 'Σε startup φάση', 'Ως freelancer'] },
-      { id: 'field', label: 'Ποιο πεδίο σε τραβάει περισσότερο τώρα;', type: 'select', options: ['Τεχνολογία/Data', 'Marketing/Επικοινωνία', 'Business/Finance','Έρευνα/Research', 'Πωλήσεις/Εξυπηρέτηση','Δημόσιος τομέας/ΜΚΟ'] },
+      { id: 'field', label: 'Ποιο πεδίο σε τραβάει περισσότερο τώρα;', type: 'select', options: ['Τεχνολογία/Data', 'Marketing/Επικοινωνία', 'Business/Finance', 'Έρευνα/Research', 'Πωλήσεις/Εξυπηρέτηση', 'Δημόσιος τομέας/ΜΚΟ'] },
       { id: 'asset', label: 'Ποιο είναι το βασικό σου asset;', type: 'select', options: ['Αναλυτική σκέψη', 'Δημιουργικότητα', 'Οργάνωση', 'Διαπροσωπική επικοινωνία'] },
       { id: 'presentation', label: 'Πόσο άνετα νιώθεις να παρουσιάζεις ή να δικτυώνεσαι;', type: 'select', options: ['Πολύ', 'Μέτρια', 'Ελάχιστα'] },
       { id: 'risk', label: 'Πώς θα περιέγραφες το ρίσκο;', type: 'select', options: ['Ευκαιρία', 'Άγχος', 'Εξαρτάται από το πλαίσιο'] },
@@ -181,35 +184,14 @@ export default function EPythia() {
   };
 
   const testimonials = [
-    {
-      text: 'Η e-Pythia με βοήθησε να επιλέξω Πληροφορική αντί για Οικονομικά. Η καλύτερη απόφαση της ζωής μου!',
-      name: 'Νίκος Π.',
-      role: 'Μαθητής, 17 ετών — Αθήνα',
-      gradient: 'from-cyan-500 to-blue-500',
-    },
-    {
-      text: 'Ήμουν stuck 2 χρόνια στο δημόσιο. Τώρα έχω σαφές σχέδιο για το επόμενο κεφάλαιό μου.',
-      name: 'Μαρία Σ.',
-      role: 'Δημόσιος υπάλληλος, 34 ετών — Θεσσαλονίκη',
-      gradient: 'from-violet-500 to-fuchsia-500',
-    },
-    {
-      text: 'Σαν να μίλησα με πραγματικό σύμβουλο καριέρας. Εντυπωσιακά εξατομικευμένο.',
-      name: 'Γιώργος Α.',
-      role: 'Φοιτητής, 26 ετών — Πάτρα',
-      gradient: 'from-fuchsia-500 to-pink-500',
-    },
+    { text: 'Η e-Pythia με βοήθησε να επιλέξω Πληροφορική αντί για Οικονομικά. Η καλύτερη απόφαση της ζωής μου!', name: 'Νίκος Π.', role: 'Μαθητής, 17 ετών — Αθήνα', gradient: 'from-cyan-500 to-blue-500' },
+    { text: 'Ήμουν stuck 2 χρόνια στο δημόσιο. Τώρα έχω σαφές σχέδιο για το επόμενο κεφάλαιό μου.', name: 'Μαρία Σ.', role: 'Δημόσιος υπάλληλος, 34 ετών — Θεσσαλονίκη', gradient: 'from-violet-500 to-fuchsia-500' },
+    { text: 'Σαν να μίλησα με πραγματικό σύμβουλο καριέρας. Εντυπωσιακά εξατομικευμένο.', name: 'Γιώργος Α.', role: 'Φοιτητής, 26 ετών — Πάτρα', gradient: 'from-fuchsia-500 to-pink-500' },
   ];
 
   const stepLabels = ['Προφίλ', 'Ερωτήσεις', 'Στοιχεία', 'Αποτελέσματα'];
 
-  const getStepNumber = () => {
-    if (step === 'welcome' || step === 'employee-sector-select' || step === 'highschool-type-select') return 1;
-    if (step === 'questionnaire') return 2;
-    if (step === 'contact') return 3;
-    if (step === 'results') return 4;
-    return 1;
-  };
+  // ── Derived ────────────────────────────────────────────────────
 
   const currentQuestions = userType === 'highschool'
     ? (highschoolType === 'epal' ? questions.highschool_epal : questions.highschool_general)
@@ -219,9 +201,18 @@ export default function EPythia() {
 
   const activeQuestion = currentQuestions?.[currentQuestionIndex];
   const totalQuestions = currentQuestions?.length || 0;
-  const wizardProgress = totalQuestions ? Math.round(((currentQuestionIndex) / totalQuestions) * 100) : 0;
+  const wizardProgress = totalQuestions ? Math.round((currentQuestionIndex / totalQuestions) * 100) : 0;
+  const checkedCount = Object.values(checkedSteps).filter(Boolean).length;
+  const actionProgress = actionSteps.length ? Math.round((checkedCount / actionSteps.length) * 100) : 0;
 
-  // --- Handlers ---
+  const getStepNumber = () => {
+    if (step === 'welcome' || step === 'employee-sector-select' || step === 'highschool-type-select') return 1;
+    if (step === 'questionnaire') return 2;
+    if (step === 'contact') return 3;
+    return 4;
+  };
+
+  // ── Handlers ───────────────────────────────────────────────────
 
   const handleUserTypeSelect = (type) => {
     setUserType(type);
@@ -246,45 +237,37 @@ export default function EPythia() {
     setStep('questionnaire');
   };
 
-  const handleInputChange = (questionId, value) => {
-    setFormData((prev) => ({ ...prev, [questionId]: value }));
-  };
-
-  const handleContactChange = (field, value) => {
-    setContactInfo((prev) => ({ ...prev, [field]: value }));
-  };
+  const handleInputChange = (id, value) => setFormData((p) => ({ ...p, [id]: value }));
+  const handleContactChange = (field, value) => setContactInfo((p) => ({ ...p, [field]: value }));
 
   const advanceQuestion = () => {
-    if (currentQuestionIndex < totalQuestions - 1) {
-      setCurrentQuestionIndex((prev) => prev + 1);
-    } else {
-      setStep('contact');
-    }
+    if (currentQuestionIndex < totalQuestions - 1) setCurrentQuestionIndex((p) => p + 1);
+    else setStep('contact');
   };
 
   const goToPrevQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex((prev) => prev - 1);
-    } else {
-      if (userType === 'employee') setStep('employee-sector-select');
-      else if (userType === 'highschool') setStep('highschool-type-select');
-      else setStep('welcome');
-    }
+    if (currentQuestionIndex > 0) { setCurrentQuestionIndex((p) => p - 1); return; }
+    if (userType === 'employee') setStep('employee-sector-select');
+    else if (userType === 'highschool') setStep('highschool-type-select');
+    else setStep('welcome');
   };
 
-  const handleOptionSelect = (questionId, value) => {
+  const handleOptionSelect = (id, value) => {
     setFlashOption(value);
-    handleInputChange(questionId, value);
-    setTimeout(() => {
-      setFlashOption(null);
-      advanceQuestion();
-    }, 280);
+    handleInputChange(id, value);
+    setTimeout(() => { setFlashOption(null); advanceQuestion(); }, 280);
   };
+
+  const toggleStep = (idx) => setCheckedSteps((p) => ({ ...p, [idx]: !p[idx] }));
 
   const retakeQuestionnaire = () => {
     setFormData({});
     setCurrentQuestionIndex(0);
     setRecommendations('');
+    setPersona(null);
+    setActionSteps([]);
+    setCheckedSteps({});
+    setRating(0);
     setLeadSaved(false);
     setStep('questionnaire');
   };
@@ -297,14 +280,80 @@ export default function EPythia() {
     setFormData({});
     setContactInfo({ firstName: '', lastName: '', email: '' });
     setRecommendations('');
+    setPersona(null);
+    setActionSteps([]);
+    setCheckedSteps({});
+    setRating(0);
     setLeadSaved(false);
     setCurrentQuestionIndex(0);
     setFlashOption(null);
   };
 
-  const isContactComplete = () => {
-    return contactInfo.firstName.trim() && contactInfo.lastName.trim() && contactInfo.email.includes('@');
+  const isContactComplete = () =>
+    contactInfo.firstName.trim() && contactInfo.lastName.trim() && contactInfo.email.includes('@');
+
+  const handleShare = async () => {
+    const text = `Ανακάλυψα το καριερικό μου προφίλ στην e-Pythia!${persona ? ` Είμαι: ${persona.name} — ${persona.tagline}` : ''}\n\nΔοκίμασε κι εσύ: https://epythia.netlify.app`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setShareSuccess(true);
+      setTimeout(() => setShareSuccess(false), 2500);
+    } catch {}
   };
+
+  const downloadPDF = () => {
+    const html = `<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <title>e-Pythia — ${contactInfo.firstName} ${contactInfo.lastName}</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI',Arial,sans-serif;color:#1e1b4b;background:#fff}
+    .header{background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;padding:28px 40px}
+    .header h1{font-size:28px;font-weight:800}
+    .header p{font-size:13px;opacity:.85;margin-top:4px}
+    .content{padding:36px 40px}
+    .user-name{font-size:20px;font-weight:700;color:#4c1d95;margin-bottom:4px}
+    .date{font-size:12px;color:#94a3b8;margin-bottom:28px}
+    .persona-card{background:linear-gradient(135deg,#f5f3ff,#ede9fe);border-left:5px solid #7c3aed;border-radius:10px;padding:20px 24px;margin-bottom:32px}
+    .persona-name{font-size:22px;font-weight:800;color:#5b21b6}
+    .persona-tagline{font-size:13px;color:#6d28d9;margin-top:4px}
+    .section-title{font-size:18px;font-weight:700;color:#5b21b6;border-bottom:2px solid #ede9fe;padding-bottom:8px;margin:28px 0 14px}
+    .rec-h3{font-size:15px;font-weight:700;color:#4c1d95;margin:20px 0 8px}
+    .rec-line{font-size:13px;line-height:1.8;color:#374151}
+    .rec-bullet{font-size:13px;color:#374151;padding-left:16px;margin:4px 0;line-height:1.7}
+    .action-plan{background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:20px 24px;margin-top:28px}
+    .action-item{font-size:13px;color:#166534;padding:8px 0;border-bottom:1px solid #dcfce7;line-height:1.6}
+    .action-item:last-child{border-bottom:none}
+    .footer{margin-top:48px;padding:16px 40px;background:#f5f3ff;font-size:11px;color:#7c3aed;display:flex;justify-content:space-between}
+    @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  </style>
+</head>
+<body>
+  <div class="header"><h1>e-Pythia</h1><p>AI Σύμβουλος Καριέρας</p></div>
+  <div class="content">
+    <div class="user-name">${contactInfo.firstName} ${contactInfo.lastName}</div>
+    <div class="date">${new Date().toLocaleDateString('el-GR', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+    ${persona ? `<div class="persona-card"><div class="persona-name">${persona.name}</div><div class="persona-tagline">${persona.tagline}</div></div>` : ''}
+    <div class="section-title">Ο Χάρτης της Καριέρας σου</div>
+    ${recommendations.split('\n').map(l => {
+      if (l.startsWith('###')) return `<div class="rec-h3">${l.replace(/^###\s*/, '')}</div>`;
+      if (l.startsWith('-')) return `<div class="rec-bullet">• ${l.replace(/^-\s*/, '')}</div>`;
+      if (l.startsWith('**') && l.endsWith('**')) return `<div class="rec-line"><strong>${l.replace(/\*\*/g, '')}</strong></div>`;
+      return l.trim() ? `<div class="rec-line">${l}</div>` : '<br>';
+    }).join('')}
+    ${actionSteps.length ? `<div class="action-plan"><div class="section-title" style="margin-top:0">Σχέδιο Δράσης</div>${actionSteps.map((s, i) => `<div class="action-item">${i + 1}. ${s}</div>`).join('')}</div>` : ''}
+  </div>
+  <div class="footer"><span>epythia.netlify.app • pythiacontact@gmail.com</span><span>Δημιουργήθηκε με e-Pythia AI</span></div>
+  <script>window.onload=()=>window.print()<\/script>
+</body></html>`;
+    const w = window.open('', '_blank');
+    w.document.write(html);
+    w.document.close();
+  };
+
+  // ── Prompt ─────────────────────────────────────────────────────
 
   const generatePrompt = () => {
     const typeLabels = {
@@ -314,99 +363,159 @@ export default function EPythia() {
       employee_public: 'επαγγελματίας του δημόσιου τομέα που εξερευνά νέες ευκαιρίες ανέλιξης',
       employee_private: 'επαγγελματίας του ιδιωτικού τομέα που εξερευνά νέες ευκαιρίες ανέλιξης'
     };
+    let key = userType;
+    if (userType === 'highschool') key = `highschool_${highschoolType}`;
+    else if (userType === 'employee') key = `employee_${employeeSector}`;
 
-    let userTypeKey = userType;
-    if (userType === 'highschool') userTypeKey = `highschool_${highschoolType}`;
-    else if (userType === 'employee') userTypeKey = `employee_${employeeSector}`;
-
-    let prompt = `Είσαι η e-Pythia, ένας έμπειρος και εξειδικευμένος σύμβουλος καριέρας. Ένας/μια ${typeLabels[userTypeKey]} χρειάζεται τη δική σου καθοδήγηση σχετικά με τα επόμενα βήματα.\n\nΠροφίλ Χρήστη:\n`;
-
-    currentQuestions.forEach((q) => {
-      const answer = formData[q.id] || 'Δεν δόθηκε απάντηση';
-      prompt += `- ${q.label}: ${answer}\n`;
-    });
+    let p = `Είσαι η e-Pythia, ένας έμπειρος σύμβουλος καριέρας. Ένας/μια ${typeLabels[key]} χρειάζεται καθοδήγηση.\n\nΠροφίλ:\n`;
+    currentQuestions.forEach((q) => { p += `- ${q.label}: ${formData[q.id] || 'Δεν δόθηκε'}\n`; });
 
     if (userType === 'highschool' && highschoolType === 'epal') {
-      prompt += `\nΠαράσχε καθαρή καθοδήγηση με:\n1. 1-2 ειδικότητες ΕΠΑΛ που ταιριάζουν (και γιατί κάθε μία ταιριάζει). Βάλε μέσα pros & cons, προοπτικές εργασίας και πλάνο εξέλιξης\n2. Εναλλακτικές επαγγελματικές διαδρομές (και άλλα ΕΠΑΛ ή άλλες επιλογές)\n3. Δεξιότητες που πρέπει να αναπτύξει (soft skills, τεχνικές δεξιότητες, γλώσσες)\n4. Επόμενα βήματα (πρακτική, σύντομη πρόγνωση)\n\nBe encouraging, συγκεκριμένο και ρεαλιστικό. Κάνε τις προτάσεις σας με βάση την ελληνική αγορά εργασίας.`;
+      p += `\n1. 1-2 ειδικότητες ΕΠΑΛ (pros/cons, προοπτικές)\n2. Εναλλακτικές\n3. Δεξιότητες\n4. Επόμενα βήματα\nΕλληνική αγορά εργασίας.`;
     } else if (userType === 'highschool' && highschoolType === 'general') {
-      prompt += `\nΠαράσχε:\n1. 1-2 κορυφαίες κατευθύνσεις/σπουδές που ταιριάζουν (και γιατί κάθε μία ταιριάζει). Βάλε μέσα pros & cons και προοπτικές\n2. Εναλλακτικές κατευθύνσεις/σχολές\n3. Δεξιότητες που πρέπει να αναπτύξει πριν ή κατά τις σπουδές\n4. Επόμενα βήματα (προετοιμασία για Πανελλήνιες, επιλογή σχολών, κλπ)\n\nBe specific με ονόματα σχολών (ΑΕΙ/ΤΕΙ), κατευθύνσεων και επαγγελματικών πεδίων.`;
+      p += `\n1. 1-2 κατευθύνσεις/σπουδές (pros/cons)\n2. Εναλλακτικές σχολές\n3. Δεξιότητες\n4. Επόμενα βήματα\nΟνόματα σχολών ΑΕΙ/ΤΕΙ.`;
     } else if (userType === 'university') {
-      prompt += `\nΠαράσχε:\n1. Επαγγελματικές θέσεις ή μεταπτυχιακά προγράμματα\n2. Κλάδους που εκτιμούν τις δεξιότητές του\n3. Βήματα μετάβασης\n4. Δεξιότητες που πρέπει να αναπτύξει\n\nBe specific με τίτλους θέσεων.`;
+      p += `\n1. Θέσεις/μεταπτυχιακά\n2. Κλάδοι\n3. Βήματα μετάβασης\n4. Δεξιότητες`;
     } else if (userType === 'employee' && employeeSector === 'public') {
-      prompt += `\nΠαράσχε:\n1. Επόμενα επαγγελματικά βήματα στο δημόσιο τομέα ή εναλλακτικές διαδρομές\n2. Πώς να αξιοποιήσει την εμπειρία και τα credentials του\n3. Δεξιότητες που πρέπει να αναπτύξει\n4. Σχέδιο δράσης για τους επόμενους 6-12 μήνες\n\nBe strategic και λάβε υπόψιν τα ειδικά χαρακτηριστικά του δημόσιου τομέα.`;
-    } else if (userType === 'employee' && employeeSector === 'private') {
-      prompt += `\nΠαράσχε:\n1. Επόμενα επαγγελματικά βήματα (αλλαγή εταιρείας, κλάδου, ή νέα αρχή)\n2. Πώς να αξιοποιήσει την εμπειρία του\n3. Δεξιότητες που πρέπει να αναπτύξει\n4. Σχέδιο δράσης για τους επόμενους 6-12 μήνες\n\nBe strategic και δυναμικό.`;
+      p += `\n1. Επόμενα βήματα/εναλλακτικές\n2. Αξιοποίηση εμπειρίας\n3. Δεξιότητες\n4. Σχέδιο 6-12 μηνών`;
+    } else {
+      p += `\n1. Επόμενα βήματα\n2. Αξιοποίηση εμπειρίας\n3. Δεξιότητες\n4. Σχέδιο 6-12 μηνών`;
     }
 
-    prompt += `\n\nΔώσε την απάντηση σε δομημένη μορφή με markdown, με ξεκάθαρες ενότητες:
+    p += `
+
+Markdown με sections:
 ### 1. Κορυφαίες επιλογές
 ### 2. Εναλλακτικές διαδρομές
 ### 3. Δεξιότητες που πρέπει να αναπτύξει
 ### 4. Επόμενα βήματα
 
-Μην προσθέτεις χαιρετισμούς (π.χ. "Φίλε/η μαθητή/τρια") ούτε καταληκτικές γενικές παραγράφους.
-Μην ξαναγράφεις τίτλο με το όνομα e-Pythia ή το όνομα του χρήστη. Ξεκίνα κατευθείαν από το πρώτο section.`.trim();
+Χωρίς χαιρετισμούς. Ξεκίνα από το πρώτο section.
 
-    return prompt;
+Μετά τις συστάσεις πρόσθεσε ΑΚΡΙΒΩΣ (valid JSON, χωρίς code fences):
+
+---PERSONA_START---
+{"name":"[GREEK_NAME]","tagline":"[ONE_LINE_GREEK]","type":"[innovator|builder|analyst|leader|explorer|caregiver]"}
+---PERSONA_END---
+
+---ACTIONS_START---
+{"steps":["[ACTION_1_GREEK]","[ACTION_2]","[ACTION_3]","[ACTION_4]","[ACTION_5]"]}
+---ACTIONS_END---
+
+Personas: innovator="Ο Καινοτόμος", builder="Ο Δημιουργός", analyst="Ο Αναλυτής", leader="Ο Ηγέτης", explorer="Ο Εξερευνητής", caregiver="Ο Φροντιστής".
+Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δράσης.`;
+    return p.trim();
   };
+
+  // ── Submit ─────────────────────────────────────────────────────
 
   const handleSubmit = async () => {
     setLoading(true);
     setStep('results');
-
     try {
-      const response = await fetch('/.netlify/functions/epythia', {
+      const res = await fetch('/.netlify/functions/epythia', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: generatePrompt() }),
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.error('Server error:', data);
+      const data = await res.json();
+      if (!res.ok) {
         setRecommendations('Συγγνώμη, υπήρξε σφάλμα κατά την επεξεργασία του αιτήματός σου.');
         setLoading(false);
         return;
       }
-
-      const recs = data.message;
-      setRecommendations(recs);
+      const parsed = parseAIResponse(data.message);
+      setRecommendations(parsed.recommendations);
+      setPersona(parsed.persona);
+      setActionSteps(parsed.actionSteps);
 
       if (!leadSaved) {
         setLeadSaved(true);
         await fetch('/.netlify/functions/save-lead', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            firstName: contactInfo.firstName,
-            lastName: contactInfo.lastName,
-            email: contactInfo.email,
-            userType: userType,
-            sector: employeeSector || null,
-            highschoolType: highschoolType || null,
-            results: recs
-          })
-        }).catch(err => console.error('Lead save error:', err));
-
+          body: JSON.stringify({ firstName: contactInfo.firstName, lastName: contactInfo.lastName, email: contactInfo.email, userType, sector: employeeSector || null, highschoolType: highschoolType || null, results: parsed.recommendations })
+        }).catch(console.error);
         setShowLeadPopup(true);
         setTimeout(() => setShowLeadPopup(false), 4000);
       }
-
-    } catch (error) {
-      console.error('Fetch failed:', error);
+    } catch {
       setRecommendations('Συγγνώμη, υπήρξε σφάλμα. Παρακαλώ δοκίμασε ξανά.');
     } finally {
       setLoading(false);
     }
   };
 
+  // ── Sub-components ─────────────────────────────────────────────
+
+  const PersonaBadge = () => {
+    if (!persona) return null;
+    const cfg = personaConfig[persona.type] || personaConfig.explorer;
+    const Icon = cfg.icon;
+    return (
+      <div className={`bg-gradient-to-br ${cfg.bg} rounded-2xl p-8 border ${cfg.border} backdrop-blur-sm animate-fade-in`}>
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+          <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${cfg.gradient} flex items-center justify-center shadow-lg flex-shrink-0 ring-4 ${cfg.ring}`}>
+            <Icon className="w-10 h-10 text-white" />
+          </div>
+          <div className="text-center sm:text-left">
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1">Το προφίλ σου</p>
+            <h3 className={`text-3xl font-extrabold mb-2 bg-gradient-to-r ${cfg.gradient} bg-clip-text text-transparent`}>{persona.name}</h3>
+            <p className="text-slate-300 text-base leading-relaxed max-w-lg">{persona.tagline}</p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const ActionPlan = () => {
+    if (!actionSteps.length) return null;
+    return (
+      <div className="bg-gradient-to-br from-slate-800/50 to-slate-800/20 rounded-2xl p-8 border border-slate-700/50 backdrop-blur-sm">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-2xl font-bold text-slate-100">Το Σχέδιο Δράσης σου</h3>
+            <p className="text-slate-400 text-sm mt-1">Τσέκαρε τα βήματα καθώς τα ολοκληρώνεις</p>
+          </div>
+          <div className="text-right">
+            <span className="text-2xl font-bold text-violet-400">{actionProgress}%</span>
+            <p className="text-xs text-slate-500">{checkedCount}/{actionSteps.length} βήματα</p>
+          </div>
+        </div>
+        <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden mb-6">
+          <div className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full transition-all duration-500" style={{ width: `${actionProgress}%` }} />
+        </div>
+        <div className="space-y-3">
+          {actionSteps.map((s, i) => (
+            <button key={i} onClick={() => toggleStep(i)}
+              className={`w-full flex items-start gap-4 p-4 rounded-xl border text-left transition-all duration-200 ${
+                checkedSteps[i] ? 'border-emerald-500/40 bg-emerald-500/10' : 'border-slate-700 bg-slate-900/40 hover:border-slate-600 hover:bg-slate-800/60'
+              }`}>
+              <div className={`w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center mt-0.5 transition-all ${checkedSteps[i] ? 'bg-emerald-500 border-emerald-500' : 'border-slate-600'}`}>
+                {checkedSteps[i] && <Check className="w-3.5 h-3.5 text-white" />}
+              </div>
+              <span className={`text-sm leading-relaxed transition-all ${checkedSteps[i] ? 'line-through text-slate-500' : 'text-slate-200'}`}>
+                <span className="font-semibold text-violet-400 mr-2">Βήμα {i + 1}.</span>{s}
+              </span>
+            </button>
+          ))}
+        </div>
+        {actionProgress === 100 && (
+          <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 border border-emerald-500/40 text-center animate-fade-in">
+            <p className="text-emerald-300 font-bold">🎉 Συγχαρητήρια! Ολοκλήρωσες όλα τα βήματα!</p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const currentStepNum = getStepNumber();
+
+  // ── Render ─────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-200">
 
-      {/* Lead Saved Popup */}
       {showLeadPopup && (
         <div className="fixed inset-0 flex items-end justify-center p-4 z-50 pointer-events-none">
           <div className="animate-bounce bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-2xl px-8 py-4 shadow-2xl mb-6 pointer-events-auto">
@@ -423,10 +532,9 @@ export default function EPythia() {
         </div>
       )}
 
-      {/* Navigation Header */}
+      {/* Header */}
       <div className="sticky top-0 bg-slate-900/70 border-b border-slate-700/30 backdrop-blur-2xl z-50 shadow-lg">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center gap-4">
-          {/* Logo */}
           <div className="flex items-center gap-3 flex-shrink-0">
             <div className="relative">
               <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-cyan-400 via-violet-400 to-fuchsia-400 p-0.5 shadow-lg shadow-violet-500/20">
@@ -442,7 +550,6 @@ export default function EPythia() {
             </div>
           </div>
 
-          {/* Step Stepper — shown after welcome */}
           {step !== 'welcome' && (
             <div className="hidden sm:flex items-center gap-1">
               {stepLabels.map((label, idx) => {
@@ -453,20 +560,16 @@ export default function EPythia() {
                   <div key={label} className="flex items-center gap-1">
                     <div className="flex flex-col items-center">
                       <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                        isDone
-                          ? 'bg-gradient-to-br from-cyan-500 to-violet-500 text-white'
-                          : isActive
-                          ? 'bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white ring-2 ring-violet-400/50'
-                          : 'bg-slate-800 text-slate-500 border border-slate-700'
+                        isDone ? 'bg-gradient-to-br from-cyan-500 to-violet-500 text-white'
+                        : isActive ? 'bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white ring-2 ring-violet-400/50'
+                        : 'bg-slate-800 text-slate-500 border border-slate-700'
                       }`}>
                         {isDone ? <Check className="w-3.5 h-3.5" /> : num}
                       </div>
-                      <span className={`text-[10px] mt-0.5 font-medium ${isActive ? 'text-violet-400' : isDone ? 'text-slate-400' : 'text-slate-600'}`}>
-                        {label}
-                      </span>
+                      <span className={`text-[10px] mt-0.5 font-medium ${isActive ? 'text-violet-400' : isDone ? 'text-slate-400' : 'text-slate-600'}`}>{label}</span>
                     </div>
                     {idx < stepLabels.length - 1 && (
-                      <div className={`w-6 h-px mb-4 transition-all duration-300 ${isDone ? 'bg-violet-500' : 'bg-slate-700'}`} />
+                      <div className={`w-6 h-px mb-4 transition-all ${isDone ? 'bg-violet-500' : 'bg-slate-700'}`} />
                     )}
                   </div>
                 );
@@ -474,12 +577,8 @@ export default function EPythia() {
             </div>
           )}
 
-          {/* Back button */}
           {step !== 'welcome' && (
-            <button
-              onClick={resetApp}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition duration-200 text-sm font-medium flex-shrink-0"
-            >
+            <button onClick={resetApp} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition duration-200 text-sm font-medium flex-shrink-0">
               <ArrowLeft className="w-4 h-4" />
               <span className="hidden sm:inline">Αρχή</span>
             </button>
@@ -493,44 +592,28 @@ export default function EPythia() {
         {step === 'welcome' && (
           <div className="animate-fade-in">
             <div className="text-center mb-16">
-              <div className="flex justify-center mb-6">
-                <Sparkles className="w-6 h-6 text-violet-400 animate-bounce" />
-              </div>
-              <h2 className="text-6xl md:text-7xl font-bold mb-4 bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent leading-tight">
-                e-Pythia
-              </h2>
+              <div className="flex justify-center mb-6"><Sparkles className="w-6 h-6 text-violet-400 animate-bounce" /></div>
+              <h2 className="text-6xl md:text-7xl font-bold mb-4 bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent leading-tight">e-Pythia</h2>
               <p className="text-xl md:text-2xl text-slate-300 mb-2 font-light">Ο 1ος AI Σύμβουλος Καριέρας στην Ελλάδα</p>
               <p className="text-slate-400 max-w-2xl mx-auto mb-12">Λάβε άμεσες και πρακτικές συμβουλές καριέρας με τη δύναμη του AI</p>
             </div>
 
-            {/* User Type Cards */}
             <div className="max-w-6xl mx-auto mb-20">
-              <p className="text-center mb-6 text-lg leading-relaxed bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent font-semibold">
-                Διάλεξε τη κατηγορία που ανήκεις
-              </p>
-              <div className="flex justify-center mb-8 animate-bounce">
-                <ChevronRight className="w-8 h-8 text-violet-400 rotate-90" />
-              </div>
-
+              <p className="text-center mb-6 text-lg bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent font-semibold">Διάλεξε τη κατηγορία που ανήκεις</p>
+              <div className="flex justify-center mb-8 animate-bounce"><ChevronRight className="w-8 h-8 text-violet-400 rotate-90" /></div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {userTypes.map((type) => {
                   const Icon = type.icon;
                   return (
-                    <button
-                      key={type.id}
-                      onClick={() => handleUserTypeSelect(type.id)}
-                      className="group relative bg-gradient-to-br from-slate-800/50 to-slate-800/20 backdrop-blur-sm rounded-3xl p-12 border border-slate-700/50 hover:border-slate-600 transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/10 hover:-translate-y-2"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-br from-slate-800/0 to-slate-800/0 group-hover:from-slate-800/50 group-hover:to-slate-800/20 rounded-3xl transition-all duration-300" />
+                    <button key={type.id} onClick={() => handleUserTypeSelect(type.id)}
+                      className="group relative bg-gradient-to-br from-slate-800/50 to-slate-800/20 backdrop-blur-sm rounded-3xl p-12 border border-slate-700/50 hover:border-slate-600 transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/10 hover:-translate-y-2">
                       <div className="relative z-10 flex flex-col items-center text-center">
-                        <h3 className="text-2xl font-bold mb-6 group-hover:text-slate-100 transition-colors">Είσαι {type.title};</h3>
-                        <p className="text-slate-400 text-base mb-6 group-hover:text-slate-300 transition-colors">{type.description}</p>
+                        <h3 className="text-2xl font-bold mb-6">Είσαι {type.title};</h3>
+                        <p className="text-slate-400 text-base mb-6">{type.description}</p>
                         <div className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${type.gradient} flex items-center justify-center mb-6 shadow-lg`}>
                           <Icon className="w-12 h-12 text-white" />
                         </div>
-                        <div className="flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <ChevronRight className="w-6 h-6 text-violet-400 group-hover:translate-x-1 transition-transform" />
-                        </div>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity"><ChevronRight className="w-6 h-6 text-violet-400" /></div>
                       </div>
                     </button>
                   );
@@ -547,9 +630,7 @@ export default function EPythia() {
                     <Quote className="w-5 h-5 text-violet-400/60 mb-3" />
                     <p className="text-slate-300 text-sm leading-relaxed mb-4 italic">"{t.text}"</p>
                     <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${t.gradient} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
-                        {t.name.charAt(0)}
-                      </div>
+                      <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${t.gradient} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>{t.name.charAt(0)}</div>
                       <div>
                         <p className="text-sm font-semibold text-slate-200">{t.name}</p>
                         <p className="text-xs text-slate-500">{t.role}</p>
@@ -561,24 +642,19 @@ export default function EPythia() {
             </div>
 
             {/* Coach Card */}
-            <div className="max-w-4xl mx-auto mb-12 mt-4">
+            <div className="max-w-4xl mx-auto mb-8">
               <div className="text-center mb-8">
-                <p className="text-lg leading-relaxed bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent font-semibold mb-4">
-                  Θες καθοδήγηση από εξειδικευμένο σύμβουλο καριέρας; Είσαι μόνο ένα click μακριά
-                </p>
-                <div className="flex justify-center animate-bounce">
-                  <ChevronRight className="w-8 h-8 text-violet-400 rotate-90" />
-                </div>
+                <p className="text-lg bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent font-semibold mb-4">Θες καθοδήγηση από εξειδικευμένο σύμβουλο καριέρας; Είσαι μόνο ένα click μακριά</p>
+                <div className="flex justify-center animate-bounce"><ChevronRight className="w-8 h-8 text-violet-400 rotate-90" /></div>
               </div>
             </div>
-
             <div className="max-w-4xl mx-auto bg-gradient-to-br from-slate-800/50 to-slate-800/20 rounded-2xl p-10 border border-slate-700/50 backdrop-blur-sm">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
                 <div className="flex justify-center md:justify-start">
                   <div className="relative">
                     <div className="w-40 h-40 rounded-2xl bg-gradient-to-br from-cyan-400 via-violet-400 to-fuchsia-400 p-1 shadow-xl shadow-violet-500/30 flex items-center justify-center">
                       <div className="w-full h-full rounded-2xl bg-slate-900 flex items-center justify-center">
-                        <svg className="w-24 h-24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg className="w-24 h-24" viewBox="0 0 100 100" fill="none">
                           <circle cx="50" cy="30" r="15" fill="#a78bfa"/>
                           <rect x="35" y="45" width="30" height="35" rx="5" fill="#818cf8"/>
                           <rect x="20" y="50" width="15" height="8" rx="4" fill="#a78bfa"/>
@@ -588,174 +664,108 @@ export default function EPythia() {
                       </div>
                     </div>
                     <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-cyan-500 to-violet-500 rounded-lg px-3 py-1 text-xs font-bold text-white shadow-lg flex items-center gap-1">
-                      <Star className="w-3 h-3 fill-current" />
-                      Εξειδικευμένος
+                      <Star className="w-3 h-3 fill-current" />Εξειδικευμένος
                     </div>
                   </div>
                 </div>
-
                 <div className="md:col-span-2">
                   <h3 className="text-2xl font-bold mb-3">Θα σου Βρούμε τον Ιδανικό Σύμβουλό</h3>
-                  <p className="text-slate-300 mb-4">
-                    Μετά την ανάλυση AI, θα σε συνδέσουμε με έναν <span className="font-semibold">εξειδικευμένο σύμβουλο καριέρας</span> που έχει ήδη ζήσει το ίδιο path που σκέφτεσαι τώρα.
-                  </p>
+                  <p className="text-slate-300 mb-4">Μετά την ανάλυση AI, θα σε συνδέσουμε με έναν <span className="font-semibold">εξειδικευμένο σύμβουλο καριέρας</span> που έχει ήδη ζήσει το ίδιο path.</p>
                   <div className="space-y-3 mb-6">
-                    {[
-                      'Πραγματική εμπειρία στον κλάδο που σε ενδιαφέρει',
-                      'Ήδη έχει κάνει τη μετάβαση που εσύ σκέφτεσαι',
-                      'Θα σου δώσει πρακτικές και εφαρμόσιμες συμβουλές'
-                    ].map((item) => (
-                      <div key={item} className="flex items-start gap-3">
-                        <Check className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm text-slate-300">{item}</span>
-                      </div>
+                    {['Πραγματική εμπειρία στον κλάδο που σε ενδιαφέρει','Ήδη έχει κάνει τη μετάβαση που εσύ σκέφτεσαι','Θα σου δώσει πρακτικές και εφαρμόσιμες συμβουλές'].map(item => (
+                      <div key={item} className="flex items-start gap-3"><Check className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" /><span className="text-sm text-slate-300">{item}</span></div>
                     ))}
                   </div>
                   <div className="mb-6 inline-block bg-gradient-to-r from-emerald-500/20 to-green-500/20 border border-emerald-500/50 rounded-lg px-4 py-2">
                     <p className="text-sm font-bold text-emerald-300">✨ Η πρώτη αναγνωριστική συνεδρία είναι ΔΩΡΕΑΝ</p>
                   </div>
                   <div className="flex justify-center">
-                    <a
-                      href="https://calendly.com/pythiacontact/1-coaching-pythia-ai"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-3 px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 text-white font-bold hover:opacity-90 transition-all duration-300 shadow-lg shadow-violet-500/30 hover:scale-105"
-                    >
-                      <Calendar className="w-5 h-5" />
-                      Κλείσε Δωρεάν Συνεδρία
-                      <ChevronRight className="w-4 h-4" />
+                    <a href="https://calendly.com/pythiacontact/1-coaching-pythia-ai" target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-3 px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 text-white font-bold hover:opacity-90 transition-all duration-300 shadow-lg hover:scale-105">
+                      <Calendar className="w-5 h-5" />Κλείσε Δωρεάν Συνεδρία<ChevronRight className="w-4 h-4" />
                     </a>
                   </div>
                 </div>
               </div>
-
               <div className="grid grid-cols-3 gap-4 mt-8 pt-8 border-t border-slate-700">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-cyan-400 mb-1">50+</div>
-                  <div className="text-xs text-slate-400">Εξειδικευμένοι Σύμβουλοι & Ειδικότητες</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-violet-400 mb-1">95%</div>
-                  <div className="text-xs text-slate-400">Ικανοποιημένοι Χρήστες</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-fuchsia-400 mb-1">10+</div>
-                  <div className="text-xs text-slate-400">Χρόνια Εμπειρίας</div>
-                </div>
+                {[{v:'50+',l:'Εξειδικευμένοι Σύμβουλοι',c:'text-cyan-400'},{v:'95%',l:'Ικανοποιημένοι Χρήστες',c:'text-violet-400'},{v:'10+',l:'Χρόνια Εμπειρίας',c:'text-fuchsia-400'}].map(({v,l,c})=>(
+                  <div key={l} className="text-center"><div className={`text-2xl font-bold ${c} mb-1`}>{v}</div><div className="text-xs text-slate-400">{l}</div></div>
+                ))}
               </div>
             </div>
           </div>
         )}
 
-        {/* ── HIGHSCHOOL TYPE SELECT ── */}
+        {/* ── HIGHSCHOOL TYPE ── */}
         {step === 'highschool-type-select' && (
           <div className="max-w-4xl mx-auto animate-fade-in">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold mb-4">Σε ποιο σχολείο πας;</h2>
-              <p className="text-slate-400">Διάλεξε για να λάβεις προσαρμοσμένες ερωτήσεις</p>
-            </div>
+            <div className="text-center mb-12"><h2 className="text-4xl font-bold mb-4">Σε ποιο σχολείο πας;</h2><p className="text-slate-400">Διάλεξε για να λάβεις προσαρμοσμένες ερωτήσεις</p></div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {highschoolTypes.map((hsType) => {
-                const Icon = hsType.icon;
-                return (
-                  <button
-                    key={hsType.id}
-                    onClick={() => handleHighschoolTypeSelect(hsType.id)}
-                    className="group relative bg-gradient-to-br from-slate-800/50 to-slate-800/20 backdrop-blur-sm rounded-3xl p-12 border border-slate-700/50 hover:border-slate-600 transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/10 hover:-translate-y-2"
-                  >
-                    <div className="relative z-10 flex flex-col items-center text-center">
-                      <h3 className="text-2xl font-bold mb-3 group-hover:text-slate-100 transition-colors">{hsType.title}</h3>
-                      <p className="text-slate-400 text-sm mb-6 group-hover:text-slate-300 transition-colors">{hsType.description}</p>
-                      <div className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${hsType.gradient} flex items-center justify-center mb-6 shadow-lg`}>
-                        <Icon className="w-12 h-12 text-white" />
-                      </div>
-                      <ChevronRight className="w-6 h-6 text-violet-400 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </button>
-                );
-              })}
+              {highschoolTypes.map((t) => { const Icon = t.icon; return (
+                <button key={t.id} onClick={() => handleHighschoolTypeSelect(t.id)}
+                  className="group bg-gradient-to-br from-slate-800/50 to-slate-800/20 backdrop-blur-sm rounded-3xl p-12 border border-slate-700/50 hover:border-slate-600 transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/10 hover:-translate-y-2">
+                  <div className="flex flex-col items-center text-center">
+                    <h3 className="text-2xl font-bold mb-3">{t.title}</h3>
+                    <p className="text-slate-400 text-sm mb-6">{t.description}</p>
+                    <div className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${t.gradient} flex items-center justify-center mb-6 shadow-lg`}><Icon className="w-12 h-12 text-white" /></div>
+                    <ChevronRight className="w-6 h-6 text-violet-400" />
+                  </div>
+                </button>
+              ); })}
             </div>
           </div>
         )}
 
-        {/* ── EMPLOYEE SECTOR SELECT ── */}
+        {/* ── EMPLOYEE SECTOR ── */}
         {step === 'employee-sector-select' && (
           <div className="max-w-4xl mx-auto animate-fade-in">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold mb-4">Σε ποιον τομέα δραστηριοποιείσαι;</h2>
-              <p className="text-slate-400">Διάλεξε για να λάβεις προσαρμοσμένες ερωτήσεις</p>
-            </div>
+            <div className="text-center mb-12"><h2 className="text-4xl font-bold mb-4">Σε ποιον τομέα δραστηριοποιείσαι;</h2><p className="text-slate-400">Διάλεξε για να λάβεις προσαρμοσμένες ερωτήσεις</p></div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {employeeSectors.map((sector) => {
-                const Icon = sector.icon;
-                return (
-                  <button
-                    key={sector.id}
-                    onClick={() => handleEmployeeSectorSelect(sector.id)}
-                    className="group relative bg-gradient-to-br from-slate-800/50 to-slate-800/20 backdrop-blur-sm rounded-3xl p-12 border border-slate-700/50 hover:border-slate-600 transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/10 hover:-translate-y-2"
-                  >
-                    <div className="relative z-10 flex flex-col items-center text-center">
-                      <h3 className="text-2xl font-bold mb-3 group-hover:text-slate-100 transition-colors">{sector.title}</h3>
-                      <p className="text-slate-400 text-sm mb-6 group-hover:text-slate-300 transition-colors">{sector.description}</p>
-                      <div className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${sector.gradient} flex items-center justify-center mb-6 shadow-lg`}>
-                        <Icon className="w-12 h-12 text-white" />
-                      </div>
-                      <ChevronRight className="w-6 h-6 text-violet-400 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </button>
-                );
-              })}
+              {employeeSectors.map((s) => { const Icon = s.icon; return (
+                <button key={s.id} onClick={() => handleEmployeeSectorSelect(s.id)}
+                  className="group bg-gradient-to-br from-slate-800/50 to-slate-800/20 backdrop-blur-sm rounded-3xl p-12 border border-slate-700/50 hover:border-slate-600 transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/10 hover:-translate-y-2">
+                  <div className="flex flex-col items-center text-center">
+                    <h3 className="text-2xl font-bold mb-3">{s.title}</h3>
+                    <p className="text-slate-400 text-sm mb-6">{s.description}</p>
+                    <div className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${s.gradient} flex items-center justify-center mb-6 shadow-lg`}><Icon className="w-12 h-12 text-white" /></div>
+                    <ChevronRight className="w-6 h-6 text-violet-400" />
+                  </div>
+                </button>
+              ); })}
             </div>
           </div>
         )}
 
-        {/* ── QUESTIONNAIRE (Wizard) ── */}
+        {/* ── WIZARD ── */}
         {step === 'questionnaire' && activeQuestion && (
           <div className="max-w-2xl mx-auto animate-fade-in">
-            {/* Progress */}
             <div className="mb-10">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-slate-400 font-medium">
-                  Ερώτηση <span className="text-violet-400 font-bold">{currentQuestionIndex + 1}</span> από {totalQuestions}
-                </span>
+                <span className="text-sm text-slate-400">Ερώτηση <span className="text-violet-400 font-bold">{currentQuestionIndex + 1}</span> από {totalQuestions}</span>
                 <span className="text-sm font-semibold text-violet-400 bg-violet-500/10 px-3 py-1 rounded-full">{wizardProgress}%</span>
               </div>
               <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 rounded-full transition-all duration-500"
-                  style={{ width: `${wizardProgress}%` }}
-                />
+                <div className="h-full bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 rounded-full transition-all duration-500" style={{ width: `${wizardProgress}%` }} />
               </div>
             </div>
 
-            {/* Question Card */}
             <div key={currentQuestionIndex} className="animate-slide-in">
               <div className="bg-gradient-to-br from-slate-800/50 to-slate-800/20 rounded-2xl p-8 border border-slate-700/50 backdrop-blur-sm">
-                <h2 className="text-2xl font-bold mb-8 text-slate-100 leading-snug">
-                  {activeQuestion.label}
-                </h2>
+                <h2 className="text-2xl font-bold mb-8 text-slate-100 leading-snug">{activeQuestion.label}</h2>
 
-                {/* Select: clickable option buttons */}
                 {activeQuestion.type === 'select' && (
                   <div className="space-y-3">
                     {activeQuestion.options.map((opt) => {
-                      const isSelected = formData[activeQuestion.id] === opt;
-                      const isFlashing = flashOption === opt;
+                      const isSel = formData[activeQuestion.id] === opt;
+                      const isFlash = flashOption === opt;
                       return (
-                        <button
-                          key={opt}
-                          onClick={() => handleOptionSelect(activeQuestion.id, opt)}
+                        <button key={opt} onClick={() => handleOptionSelect(activeQuestion.id, opt)}
                           className={`w-full text-left px-5 py-4 rounded-xl border font-medium transition-all duration-200 ${
-                            isFlashing || isSelected
-                              ? 'border-violet-500 bg-violet-500/20 text-white scale-[0.99]'
-                              : 'border-slate-700 bg-slate-900/40 text-slate-300 hover:border-slate-500 hover:bg-slate-800/60 hover:text-white'
-                          }`}
-                        >
+                            isFlash || isSel ? 'border-violet-500 bg-violet-500/20 text-white scale-[0.99]' : 'border-slate-700 bg-slate-900/40 text-slate-300 hover:border-slate-500 hover:bg-slate-800/60 hover:text-white'
+                          }`}>
                           <div className="flex items-center gap-3">
-                            <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
-                              isFlashing || isSelected ? 'border-violet-400 bg-violet-500' : 'border-slate-600'
-                            }`}>
-                              {(isFlashing || isSelected) && <div className="w-2 h-2 rounded-full bg-white" />}
+                            <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${isFlash || isSel ? 'border-violet-400 bg-violet-500' : 'border-slate-600'}`}>
+                              {(isFlash || isSel) && <div className="w-2 h-2 rounded-full bg-white" />}
                             </div>
                             {opt}
                           </div>
@@ -765,54 +775,31 @@ export default function EPythia() {
                   </div>
                 )}
 
-                {/* Text input */}
                 {activeQuestion.type === 'text' && (
-                  <input
-                    type="text"
-                    value={formData[activeQuestion.id] || ''}
-                    onChange={(e) => handleInputChange(activeQuestion.id, e.target.value)}
-                    placeholder={activeQuestion.placeholder}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700 hover:border-slate-600 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-slate-200 transition-all duration-200 placeholder-slate-500"
-                    autoFocus
-                  />
+                  <input type="text" value={formData[activeQuestion.id] || ''} onChange={(e) => handleInputChange(activeQuestion.id, e.target.value)}
+                    placeholder={activeQuestion.placeholder} autoFocus
+                    className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700 hover:border-slate-600 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-slate-200 transition-all duration-200 placeholder-slate-500" />
                 )}
 
-                {/* Textarea */}
                 {activeQuestion.type === 'textarea' && (
-                  <textarea
-                    value={formData[activeQuestion.id] || ''}
-                    onChange={(e) => handleInputChange(activeQuestion.id, e.target.value)}
-                    placeholder={activeQuestion.placeholder}
-                    rows={5}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700 hover:border-slate-600 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-slate-200 transition-all duration-200 placeholder-slate-500 resize-none"
-                    autoFocus
-                  />
+                  <textarea value={formData[activeQuestion.id] || ''} onChange={(e) => handleInputChange(activeQuestion.id, e.target.value)}
+                    placeholder={activeQuestion.placeholder} rows={5} autoFocus
+                    className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700 hover:border-slate-600 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-slate-200 transition-all duration-200 placeholder-slate-500 resize-none" />
                 )}
               </div>
 
-              {/* Navigation */}
               <div className="flex items-center justify-between mt-6">
-                <button
-                  onClick={goToPrevQuestion}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-all duration-200 text-sm font-medium text-slate-300"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  Πίσω
+                <button onClick={goToPrevQuestion} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-all duration-200 text-sm font-medium text-slate-300">
+                  <ChevronLeft className="w-4 h-4" />Πίσω
                 </button>
-
-                {/* Next button for text/textarea only */}
                 {activeQuestion.type !== 'select' && (
-                  <button
-                    onClick={advanceQuestion}
-                    disabled={!formData[activeQuestion.id]?.trim()}
+                  <button onClick={advanceQuestion} disabled={!formData[activeQuestion.id]?.trim()}
                     className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all duration-300 ${
                       formData[activeQuestion.id]?.trim()
                         ? 'bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 text-white hover:opacity-90 hover:shadow-lg hover:shadow-violet-500/40'
                         : 'bg-slate-700 text-slate-500 cursor-not-allowed opacity-50'
-                    }`}
-                  >
-                    {currentQuestionIndex === totalQuestions - 1 ? 'Ολοκλήρωση' : 'Επόμενο'}
-                    <ChevronRight className="w-4 h-4" />
+                    }`}>
+                    {currentQuestionIndex === totalQuestions - 1 ? 'Ολοκλήρωση' : 'Επόμενο'}<ChevronRight className="w-4 h-4" />
                   </button>
                 )}
               </div>
@@ -827,37 +814,25 @@ export default function EPythia() {
               <h2 className="text-3xl font-bold mb-2">Σχεδόν Έτοιμο!</h2>
               <p className="text-slate-400 mb-8">Εισήγαγε τα στοιχεία σου για να λάβεις τη δική σου ανάλυση</p>
               <div className="space-y-6">
-                {['firstName', 'lastName', 'email'].map((field) => (
+                {['firstName','lastName','email'].map(field => (
                   <div key={field}>
                     <label className="block text-base font-semibold mb-3 text-slate-100">
-                      {field === 'firstName' ? 'Όνομα' : field === 'lastName' ? 'Επώνυμο' : 'Email'}
+                      {field==='firstName'?'Όνομα':field==='lastName'?'Επώνυμο':'Email'}
                     </label>
                     <div className="relative">
-                      <input
-                        type={field === 'email' ? 'email' : 'text'}
-                        value={contactInfo[field]}
-                        onChange={(e) => handleContactChange(field, e.target.value)}
-                        placeholder={`Εισήγαγε το ${field === 'firstName' ? 'όνομά σου' : field === 'lastName' ? 'επώνυμό σου' : 'email σου'}`}
-                        className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700 hover:border-slate-600 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-slate-200 transition-all duration-200 placeholder-slate-500"
-                      />
-                      {contactInfo[field] && (
-                        <Check className="absolute right-4 top-3.5 w-5 h-5 text-emerald-400" />
-                      )}
+                      <input type={field==='email'?'email':'text'} value={contactInfo[field]} onChange={(e)=>handleContactChange(field,e.target.value)}
+                        placeholder={`Εισήγαγε το ${field==='firstName'?'όνομά σου':field==='lastName'?'επώνυμό σου':'email σου'}`}
+                        className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700 hover:border-slate-600 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-slate-200 transition-all duration-200 placeholder-slate-500" />
+                      {contactInfo[field] && <Check className="absolute right-4 top-3.5 w-5 h-5 text-emerald-400" />}
                     </div>
                   </div>
                 ))}
               </div>
-              <button
-                onClick={handleSubmit}
-                disabled={!isContactComplete()}
+              <button onClick={handleSubmit} disabled={!isContactComplete()}
                 className={`w-full mt-10 py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-300 ${
-                  isContactComplete()
-                    ? 'bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 text-white hover:opacity-90 hover:shadow-lg hover:shadow-violet-500/50 cursor-pointer'
-                    : 'bg-slate-700 text-slate-500 cursor-not-allowed opacity-50'
-                }`}
-              >
-                <Sparkles className="w-5 h-5" />
-                Δημιουργία της Ανάλυσης μου
+                  isContactComplete() ? 'bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 text-white hover:opacity-90 hover:shadow-lg hover:shadow-violet-500/50' : 'bg-slate-700 text-slate-500 cursor-not-allowed opacity-50'
+                }`}>
+                <Sparkles className="w-5 h-5" />Δημιουργία της Ανάλυσης μου
               </button>
             </div>
           </div>
@@ -868,114 +843,93 @@ export default function EPythia() {
           <div className="max-w-5xl mx-auto animate-fade-in">
             {loading ? (
               <div className="text-center py-32">
-                <div className="flex justify-center mb-6">
-                  <div className="w-20 h-20 border-4 border-slate-700 border-t-violet-500 rounded-full animate-spin" />
-                </div>
+                <div className="flex justify-center mb-6"><div className="w-20 h-20 border-4 border-slate-700 border-t-violet-500 rounded-full animate-spin" /></div>
                 <p className="text-2xl font-semibold text-slate-300 mb-2">Ανάλυση του προφίλ σου...</p>
                 <p className="text-slate-400">Ο AI σύμβουλος δημιουργεί εξατομικευμένη καθοδήγηση</p>
               </div>
             ) : (
-              <div className="space-y-8">
-                <div
-                  ref={resultsRef}
-                  className="bg-gradient-to-br from-slate-800/50 to-slate-800/20 rounded-2xl p-10 border border-slate-700/50 backdrop-blur-sm"
-                >
+              <div className="space-y-6">
+
+                {/* Persona Badge */}
+                <PersonaBadge />
+
+                {/* Career Map */}
+                <div ref={resultsRef} className="bg-gradient-to-br from-slate-800/50 to-slate-800/20 rounded-2xl p-10 border border-slate-700/50 backdrop-blur-sm">
                   <div className="flex items-center gap-3 mb-8">
                     <Sparkles className="w-8 h-8 text-violet-400" />
-                    <h2 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
-                      Ο Χάρτης της Καριέρας σου
-                    </h2>
+                    <h2 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">Ο Χάρτης της Καριέρας σου</h2>
                   </div>
-
                   <div className="text-lg leading-relaxed space-y-4">
                     {recommendations.split('\n').map((line, idx) => {
-                      if (line.startsWith('###')) {
-                        return (
-                          <h3 key={idx} className="mt-8 mb-3 text-2xl font-bold text-cyan-300 border-b border-slate-700 pb-1 flex items-center gap-2 pt-6">
-                            <Sparkles className="w-5 h-5 text-violet-400" />
-                            {line.replace('### ', '')}
-                          </h3>
-                        );
-                      }
-                      if (line.startsWith('**') && line.endsWith('**')) {
-                        return (
-                          <p key={idx} className="text-slate-200 font-semibold">
-                            {line.replace(/\*\*/g, '')}
-                          </p>
-                        );
-                      }
-                      if (line.startsWith('-')) {
-                        return (
-                          <p key={idx} className="ml-4 text-slate-300 flex gap-3">
-                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-violet-400 flex-shrink-0" />
-                            <span>{line.replace('- ', '')}</span>
-                          </p>
-                        );
-                      }
-                      return line.trim() && (
-                        <p key={idx} className="text-slate-300">{line}</p>
-                      );
+                      if (line.startsWith('###')) return <h3 key={idx} className="mt-8 mb-3 text-2xl font-bold text-cyan-300 border-b border-slate-700 pb-1 flex items-center gap-2 pt-6"><Sparkles className="w-5 h-5 text-violet-400" />{line.replace('### ','')}</h3>;
+                      if (line.startsWith('**') && line.endsWith('**')) return <p key={idx} className="text-slate-200 font-semibold">{line.replace(/\*\*/g,'')}</p>;
+                      if (line.startsWith('-')) return <p key={idx} className="ml-4 text-slate-300 flex gap-3"><span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-violet-400 flex-shrink-0" /><span>{line.replace('- ','')}</span></p>;
+                      return line.trim() && <p key={idx} className="text-slate-300">{line}</p>;
                     })}
                   </div>
                 </div>
 
-                {/* CTA Card */}
-                <div className="bg-gradient-to-br from-cyan-900/30 via-violet-900/30 to-fuchsia-900/30 rounded-2xl p-10 border border-violet-500/30 backdrop-blur-sm">
-                  <h3 className="text-2xl font-bold mb-3 text-slate-100">Έτοιμος για το Επόμενο Βήμα;</h3>
-                  <p className="text-slate-300 mb-6">
-                    Η αξιολόγηση AI παραπάνω σου δίνει μια ισχυρή βάση, αλλά <span className="font-semibold">το προσωπικό coaching</span> μπορεί να σε βοηθήσει ακόμα περισσότερο.
-                  </p>
+                {/* Action Plan */}
+                <ActionPlan />
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                    {[
-                      { icon: Compass, color: 'text-cyan-400', title: 'Αποσαφηνίσεις την Κατεύθυνσή σου', sub: 'Με κατάλληλη καθοδήγηση' },
-                      { icon: Calendar, color: 'text-violet-400', title: 'Σχέδιο Δράσης', sub: 'Για τους επόμενους 6-12 μήνες' },
-                      { icon: MessageCircle, color: 'text-fuchsia-400', title: 'Ξεπεράσεις τα Εμπόδια', sub: 'Αντιμετώπισε τις ανησυχίες σου' },
-                      { icon: Star, color: 'text-emerald-400', title: 'Μεγιστοποιήσεις το Δυναμικό σου', sub: 'Με expert insights' },
-                    ].map(({ icon: Icon, color, title, sub }) => (
-                      <div key={title} className="flex gap-3">
-                        <Icon className={`w-5 h-5 ${color} flex-shrink-0 mt-1`} />
-                        <div>
-                          <div className="font-semibold text-slate-200">{title}</div>
-                          <div className="text-sm text-slate-400">{sub}</div>
-                        </div>
-                      </div>
-                    ))}
+                {/* Quick Actions Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <button onClick={downloadPDF}
+                    className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-semibold bg-gradient-to-br from-slate-800/60 to-slate-800/30 border border-slate-700 hover:border-violet-500/50 hover:bg-slate-700/50 transition-all duration-200 text-slate-300 hover:text-white">
+                    <Download className="w-5 h-5 text-violet-400" />Λήψη PDF
+                  </button>
+
+                  <div className="flex flex-col items-center justify-center gap-2 px-6 py-4 rounded-xl bg-gradient-to-br from-slate-800/60 to-slate-800/30 border border-slate-700">
+                    <p className="text-xs text-slate-500 font-medium">Πόσο χρήσιμο ήταν;</p>
+                    <div className="flex gap-1">
+                      {[1,2,3,4,5].map(s => (
+                        <button key={s} onClick={() => setRating(s)} className="transition-transform hover:scale-110 active:scale-95">
+                          <Star className={`w-6 h-6 transition-colors ${s<=rating ? 'text-amber-400 fill-amber-400' : 'text-slate-600 hover:text-amber-400/60'}`} />
+                        </button>
+                      ))}
+                    </div>
+                    {rating > 0 && <p className="text-xs text-emerald-400 font-medium">Ευχαριστούμε!</p>}
                   </div>
 
+                  <button onClick={handleShare}
+                    className={`flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-semibold border transition-all duration-200 ${
+                      shareSuccess ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300' : 'bg-gradient-to-br from-slate-800/60 to-slate-800/30 border-slate-700 hover:border-violet-500/50 hover:bg-slate-700/50 text-slate-300 hover:text-white'
+                    }`}>
+                    {shareSuccess ? <><Check className="w-5 h-5" />Αντιγράφηκε!</> : <><Share2 className="w-5 h-5 text-violet-400" />Κοινοποίησε</>}
+                  </button>
+                </div>
+
+                {/* Coaching CTA */}
+                <div className="bg-gradient-to-br from-cyan-900/30 via-violet-900/30 to-fuchsia-900/30 rounded-2xl p-10 border border-violet-500/30 backdrop-blur-sm">
+                  <h3 className="text-2xl font-bold mb-3 text-slate-100">Έτοιμος για το Επόμενο Βήμα;</h3>
+                  <p className="text-slate-300 mb-6">Η αξιολόγηση AI σου δίνει μια ισχυρή βάση, αλλά <span className="font-semibold">το προσωπικό coaching</span> μπορεί να σε βοηθήσει ακόμα περισσότερο.</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    {[{icon:Compass,color:'text-cyan-400',title:'Αποσαφηνίσεις την Κατεύθυνσή σου',sub:'Με κατάλληλη καθοδήγηση'},{icon:Calendar,color:'text-violet-400',title:'Σχέδιο Δράσης',sub:'Για τους επόμενους 6-12 μήνες'},{icon:MessageCircle,color:'text-fuchsia-400',title:'Ξεπεράσεις τα Εμπόδια',sub:'Αντιμετώπισε τις ανησυχίες σου'},{icon:Star,color:'text-emerald-400',title:'Μεγιστοποιήσεις το Δυναμικό σου',sub:'Με expert insights'}].map(({icon:Icon,color,title,sub})=>(
+                      <div key={title} className="flex gap-3"><Icon className={`w-5 h-5 ${color} flex-shrink-0 mt-1`}/><div><div className="font-semibold text-slate-200">{title}</div><div className="text-sm text-slate-400">{sub}</div></div></div>
+                    ))}
+                  </div>
                   <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-700">
                     <div className="mb-4 bg-gradient-to-r from-emerald-500/20 to-green-500/20 border border-emerald-500/50 rounded-lg px-4 py-3">
                       <p className="text-sm font-bold text-emerald-300">✨ Η πρώτη αναγνωριστική συνεδρία είναι ΔΩΡΕΑΝ</p>
                       <p className="text-xs text-emerald-200 mt-1">Θα γνωριστείτε, θα αναλύσουμε το προφίλ σου και θα σχεδιάσουμε το σχέδιό σας μαζί</p>
                     </div>
                     <div className="flex justify-center">
-                      <a
-                        href="https://calendly.com/pythiacontact/1-coaching-pythia-ai"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-3 px-10 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 text-white font-bold text-lg hover:opacity-90 transition-all duration-300 shadow-lg shadow-violet-500/40 hover:scale-105"
-                      >
-                        <Calendar className="w-6 h-6" />
-                        Κλείσε Δωρεάν Συνεδρία
-                        <ChevronRight className="w-5 h-5" />
+                      <a href="https://calendly.com/pythiacontact/1-coaching-pythia-ai" target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-3 px-10 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 text-white font-bold text-lg hover:opacity-90 transition-all duration-300 shadow-lg shadow-violet-500/40 hover:scale-105">
+                        <Calendar className="w-6 h-6" />Κλείσε Δωρεάν Συνεδρία<ChevronRight className="w-5 h-5" />
                       </a>
                     </div>
                   </div>
                 </div>
 
-                {/* Action Buttons */}
+                {/* Bottom buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <button
-                    onClick={retakeQuestionnaire}
-                    className="flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-violet-500/50 transition-all duration-200 text-slate-300 hover:text-white"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                    Δοκίμασε Διαφορετικές Απαντήσεις
+                  <button onClick={retakeQuestionnaire}
+                    className="flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-violet-500/50 transition-all duration-200 text-slate-300 hover:text-white">
+                    <RefreshCw className="w-4 h-4" />Δοκίμασε Διαφορετικές Απαντήσεις
                   </button>
-                  <button
-                    onClick={resetApp}
-                    className="flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-all duration-200"
-                  >
+                  <button onClick={resetApp}
+                    className="flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-all duration-200">
                     Εξερεύνησε Άλλη Διαδρομή
                   </button>
                 </div>
@@ -987,38 +941,17 @@ export default function EPythia() {
 
       {/* Footer */}
       <div className="text-center py-10 text-slate-500 text-sm border-t border-slate-800/50 mt-16">
-        <p className="mb-3">
-          <span className="font-semibold text-slate-300">e-Pythia</span> • AI Σύμβουλος Καριέρας
-        </p>
-        <p className="mt-3">
-          <a href="mailto:pythiacontact@gmail.com" className="text-violet-400 hover:text-violet-300 transition-colors font-semibold">
-            pythiacontact@gmail.com
-          </a>
-        </p>
+        <p className="mb-3"><span className="font-semibold text-slate-300">e-Pythia</span> • AI Σύμβουλος Καριέρας</p>
+        <p className="mt-3"><a href="mailto:pythiacontact@gmail.com" className="text-violet-400 hover:text-violet-300 transition-colors font-semibold">pythiacontact@gmail.com</a></p>
       </div>
 
       <style jsx>{`
-        @keyframes fade-in {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.4s ease-out;
-        }
-        @keyframes slide-in {
-          from { opacity: 0; transform: translateX(24px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        .animate-slide-in {
-          animation: slide-in 0.3s ease-out;
-        }
-        @keyframes bounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
-        }
-        .animate-bounce {
-          animation: bounce 0.6s infinite;
-        }
+        @keyframes fade-in { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        .animate-fade-in { animation: fade-in 0.4s ease-out; }
+        @keyframes slide-in { from{opacity:0;transform:translateX(24px)} to{opacity:1;transform:translateX(0)} }
+        .animate-slide-in { animation: slide-in 0.3s ease-out; }
+        @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+        .animate-bounce { animation: bounce 0.6s infinite; }
       `}</style>
     </div>
   );

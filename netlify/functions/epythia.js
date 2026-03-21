@@ -46,7 +46,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         model: 'gpt-4o',
         temperature: 0.7,
-        max_tokens: 1500,
+        max_tokens: 2500,
         messages: [
           {
             role: 'system',
