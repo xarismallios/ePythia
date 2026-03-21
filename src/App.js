@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { supabase } from './supabaseClient';
 import {
   Compass,
   GraduationCap,
@@ -26,9 +27,7 @@ import {
   Mail
 } from 'lucide-react';
 
-// ── Phase 3: Profile constants ──────────────────────────────────
-const PROFILE_KEY = 'epythia_profile';
-
+// ── Profile constants ────────────────────────────────────────────
 const BADGES = {
   first_quest:   { name: 'Πρώτη Αποστολή', emoji: '🌟', desc: 'Ολοκλήρωσες την πρώτη σου ανάλυση' },
   action_taker:  { name: 'Πρώτη Δράση',   emoji: '⚡', desc: 'Ολοκλήρωσες ένα βήμα δράσης' },
@@ -46,10 +45,6 @@ const getLevel = (xp) => {
   return           { level: 1, name: 'Αρχάριος',          nextXP: 100,  min: 0   };
 };
 
-const loadProfileFromStorage = () => {
-  try { return JSON.parse(localStorage.getItem(PROFILE_KEY)); } catch { return null; }
-};
-const saveProfileToStorage = (p) => localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
 
 // ── Persona config ──────────────────────────────────────────────
 const personaConfig = {
@@ -107,13 +102,32 @@ export default function EPythia() {
   const [emailSending, setEmailSending] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
 
+  // Auth state
+  const [authUser, setAuthUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authMode, setAuthMode] = useState('login');
+  const [authForm, setAuthForm] = useState({ email: '', password: '', firstName: '', lastName: '' });
+  const [authError, setAuthError] = useState('');
+  const [authSubmitting, setAuthSubmitting] = useState(false);
+
   const resultsRef = useRef(null);
 
-  // Load profile from localStorage on mount
+  // Auth listener
   useEffect(() => {
-    const saved = loadProfileFromStorage();
-    if (saved) setProfile(saved);
-  }, []);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const user = session?.user ?? null;
+      setAuthUser(user);
+      if (user) fetchProfile(user);
+      else setAuthLoading(false);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const user = session?.user ?? null;
+      setAuthUser(user);
+      if (user) fetchProfile(user);
+      else { setProfile(null); setAuthLoading(false); }
+    });
+    return () => subscription.unsubscribe();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Static data ────────────────────────────────────────────────
 
@@ -250,6 +264,73 @@ export default function EPythia() {
     return 4;
   };
 
+  // ── Profile fetch ──────────────────────────────────────────────
+
+  const fetchProfile = async (user) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*, career_sessions(*)')
+      .eq('id', user.id)
+      .single();
+    if (data) {
+      setProfile({
+        firstName: data.first_name,
+        lastName: data.last_name,
+        email: user.email,
+        totalXP: data.total_xp,
+        badges: data.badges || [],
+        sessions: (data.career_sessions || []).map(s => ({
+          id: s.id,
+          date: s.date,
+          userType: s.user_type,
+          subType: s.sub_type,
+          persona: s.persona,
+          actionSteps: s.action_steps || [],
+          checkedSteps: s.checked_steps || {},
+          rating: s.rating,
+          rated: s.rated,
+        })),
+      });
+      setContactInfo({ firstName: data.first_name, lastName: data.last_name, email: user.email });
+    }
+    setAuthLoading(false);
+  };
+
+  // ── Auth handlers ──────────────────────────────────────────────
+
+  const handleAuthFormChange = (field, value) => setAuthForm(p => ({ ...p, [field]: value }));
+
+  const handleSignUp = async () => {
+    setAuthSubmitting(true);
+    setAuthError('');
+    const { error } = await supabase.auth.signUp({
+      email: authForm.email,
+      password: authForm.password,
+      options: { data: { first_name: authForm.firstName, last_name: authForm.lastName } },
+    });
+    if (error) setAuthError(error.message);
+    else setAuthError('confirm');
+    setAuthSubmitting(false);
+  };
+
+  const handleLogin = async () => {
+    setAuthSubmitting(true);
+    setAuthError('');
+    const { error } = await supabase.auth.signInWithPassword({
+      email: authForm.email,
+      password: authForm.password,
+    });
+    if (error) setAuthError(error.message);
+    setAuthSubmitting(false);
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setAuthUser(null);
+    setProfile(null);
+    resetApp();
+  };
+
   // ── Handlers ───────────────────────────────────────────────────
 
   const handleUserTypeSelect = (type) => {
@@ -279,8 +360,12 @@ export default function EPythia() {
   const handleContactChange = (field, value) => setContactInfo((p) => ({ ...p, [field]: value }));
 
   const advanceQuestion = () => {
-    if (currentQuestionIndex < totalQuestions - 1) setCurrentQuestionIndex((p) => p + 1);
-    else setStep('contact');
+    if (currentQuestionIndex < totalQuestions - 1) {
+      setCurrentQuestionIndex((p) => p + 1);
+    } else {
+      if (authUser) handleSubmit();
+      else setStep('contact');
+    }
   };
 
   const goToPrevQuestion = () => {
@@ -296,41 +381,35 @@ export default function EPythia() {
     setTimeout(() => { setFlashOption(null); advanceQuestion(); }, 280);
   };
 
-  const toggleStep = (idx) => {
-    setCheckedSteps((prev) => {
-      const next = { ...prev, [idx]: !prev[idx] };
+  const toggleStep = async (idx) => {
+    const next = { ...checkedSteps, [idx]: !checkedSteps[idx] };
+    setCheckedSteps(next);
 
-      if (currentSessionId) {
-        const p = loadProfileFromStorage();
-        if (p) {
-          const si = p.sessions.findIndex(s => s.id === currentSessionId);
-          if (si !== -1) {
-            p.sessions[si].checkedSteps = next;
-            const isNowChecked = !prev[idx];
-            let gained = 0;
-            const earned = [];
-            if (isNowChecked) {
-              gained += 15;
-              if (!p.badges.includes('action_taker')) { p.badges.push('action_taker'); earned.push('action_taker'); }
-              const allDone = actionSteps.every((_, i) => next[i]);
-              const wasDone = actionSteps.every((_, i) => prev[i]);
-              if (allDone && !wasDone) {
-                gained += 50;
-                if (!p.badges.includes('plan_complete')) { p.badges.push('plan_complete'); earned.push('plan_complete'); }
-              }
-            }
-            if (gained > 0) {
-              p.totalXP += gained;
-              setXpToast({ xp: gained, newBadges: earned });
-              setTimeout(() => setXpToast(null), 3000);
-            }
-            saveProfileToStorage(p);
-            setProfile({ ...p });
-          }
-        }
+    if (!currentSessionId || !authUser) return;
+
+    await supabase.from('career_sessions').update({ checked_steps: next }).eq('id', currentSessionId);
+
+    const isNowChecked = !checkedSteps[idx];
+    if (isNowChecked) {
+      let gained = 15;
+      const { data: prof } = await supabase.from('profiles').select('total_xp, badges').eq('id', authUser.id).single();
+      const existingBadges = [...(prof?.badges || [])];
+      const earned = [];
+
+      if (!existingBadges.includes('action_taker')) { existingBadges.push('action_taker'); earned.push('action_taker'); }
+      const allDone = actionSteps.every((_, i) => next[i]);
+      if (allDone) {
+        gained += 50;
+        if (!existingBadges.includes('plan_complete')) { existingBadges.push('plan_complete'); earned.push('plan_complete'); }
       }
-      return next;
-    });
+
+      const newXP = (prof?.total_xp || 0) + gained;
+      await supabase.from('profiles').update({ total_xp: newXP, badges: existingBadges }).eq('id', authUser.id);
+      await fetchProfile(authUser);
+
+      setXpToast({ xp: gained, newBadges: earned });
+      setTimeout(() => setXpToast(null), 3000);
+    }
   };
 
   const retakeQuestionnaire = () => {
@@ -367,69 +446,70 @@ export default function EPythia() {
     setEmailSent(false);
     setProfileSaved(false);
     setXpToast(null);
+    setAuthError('');
+    setAuthForm({ email: '', password: '', firstName: '', lastName: '' });
   };
 
   const isContactComplete = () =>
     contactInfo.firstName.trim() && contactInfo.lastName.trim() && contactInfo.email.includes('@');
 
-  const saveSessionToProfile = (personaArg, steps, rat) => {
+  const saveSessionToProfile = async (personaArg, steps, rat) => {
+    if (!authUser) return;
     const sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     setCurrentSessionId(sessionId);
 
-    const session = {
-      id: sessionId,
-      date: new Date().toISOString(),
-      userType,
-      subType: highschoolType || employeeSector || '',
-      persona: personaArg,
-      actionSteps: steps,
-      checkedSteps: {},
-      rating: rat,
-    };
+    const { data: prof } = await supabase.from('profiles').select('total_xp, badges').eq('id', authUser.id).single();
+    const { count: sessionCount } = await supabase.from('career_sessions').select('*', { count: 'exact', head: true }).eq('user_id', authUser.id);
 
-    const existing = loadProfileFromStorage();
-    const sessions = existing ? [...existing.sessions, session] : [session];
-    const existingXP = existing?.totalXP || 0;
-    const existingBadges = [...(existing?.badges || [])];
-
-    let gained = sessions.length === 1 ? 50 : sessions.length === 2 ? 75 : 100;
+    const cnt = (sessionCount || 0) + 1;
+    let gained = cnt === 1 ? 50 : cnt === 2 ? 75 : 100;
+    const existingBadges = [...(prof?.badges || [])];
     const earned = [];
 
-    if (sessions.length === 1 && !existingBadges.includes('first_quest')) { existingBadges.push('first_quest'); earned.push('first_quest'); }
-    if (sessions.length === 2 && !existingBadges.includes('explorer'))    { existingBadges.push('explorer');   earned.push('explorer'); }
-    if (sessions.length >= 3  && !existingBadges.includes('veteran'))     { existingBadges.push('veteran');    earned.push('veteran'); }
+    if (cnt === 1 && !existingBadges.includes('first_quest')) { existingBadges.push('first_quest'); earned.push('first_quest'); }
+    if (cnt === 2 && !existingBadges.includes('explorer'))    { existingBadges.push('explorer');   earned.push('explorer'); }
+    if (cnt >= 3  && !existingBadges.includes('veteran'))     { existingBadges.push('veteran');    earned.push('veteran'); }
 
-    const newProfile = {
-      firstName: contactInfo.firstName,
-      lastName: contactInfo.lastName,
-      email: contactInfo.email,
-      totalXP: existingXP + gained,
-      badges: existingBadges,
-      sessions,
-    };
+    await supabase.from('career_sessions').insert({
+      id: sessionId,
+      user_id: authUser.id,
+      user_type: userType,
+      sub_type: highschoolType || employeeSector || '',
+      persona: personaArg,
+      action_steps: steps,
+      checked_steps: {},
+      rating: rat,
+      rated: false,
+    });
 
-    saveProfileToStorage(newProfile);
-    setProfile(newProfile);
+    const newXP = (prof?.total_xp || 0) + gained;
+    await supabase.from('profiles').update({ total_xp: newXP, badges: existingBadges }).eq('id', authUser.id);
+    await fetchProfile(authUser);
+
     setXpToast({ xp: gained, newBadges: earned });
     setTimeout(() => setXpToast(null), 4000);
   };
 
-  const handleRating = (stars) => {
+  const handleRating = async (stars) => {
     setRating(stars);
-    if (!currentSessionId || stars === 0) return;
-    const p = loadProfileFromStorage();
-    if (!p) return;
-    const si = p.sessions.findIndex(s => s.id === currentSessionId);
-    if (si === -1 || p.sessions[si].rated) return;
-    p.sessions[si].rating = stars;
-    p.sessions[si].rated = true;
-    p.totalXP += 10;
+    if (!currentSessionId || stars === 0 || !authUser) return;
+
+    const { data: sess } = await supabase.from('career_sessions').select('rated').eq('id', currentSessionId).single();
+    if (sess?.rated) return;
+
+    await supabase.from('career_sessions').update({ rating: stars, rated: true }).eq('id', currentSessionId);
+
+    const { data: prof } = await supabase.from('profiles').select('total_xp, badges').eq('id', authUser.id).single();
+    const existingBadges = [...(prof?.badges || [])];
     const earned = [];
-    if (!p.badges.includes('rated')) { p.badges.push('rated'); earned.push('rated'); }
+    if (!existingBadges.includes('rated')) { existingBadges.push('rated'); earned.push('rated'); }
+
+    const newXP = (prof?.total_xp || 0) + 10;
+    await supabase.from('profiles').update({ total_xp: newXP, badges: existingBadges }).eq('id', authUser.id);
+    await fetchProfile(authUser);
+
     setXpToast({ xp: 10, newBadges: earned });
     setTimeout(() => setXpToast(null), 3000);
-    saveProfileToStorage(p);
-    setProfile({ ...p });
   };
 
   const handleEmailResults = async () => {
@@ -451,8 +531,8 @@ export default function EPythia() {
     setEmailSending(false);
   };
 
-  const handleCreateProfile = () => {
-    saveSessionToProfile(persona, actionSteps, rating);
+  const handleCreateProfile = async () => {
+    await saveSessionToProfile(persona, actionSteps, rating);
     setProfileSaved(true);
     setStep('profile');
   };
@@ -681,6 +761,93 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-200">
 
+      {/* Auth loading */}
+      {authLoading && (
+        <div className="fixed inset-0 bg-slate-950 flex items-center justify-center z-50">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-slate-700 border-t-violet-500 rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-slate-400">Φόρτωση...</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── AUTH PAGE ── */}
+      {!authUser && !authLoading && (
+        <div className="min-h-screen flex items-center justify-center px-6 py-16">
+          <div className="w-full max-w-md animate-fade-in">
+            <div className="text-center mb-10">
+              <h1 className="text-5xl font-bold bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent mb-2">e-Pythia</h1>
+              <p className="text-slate-400">Ο 1ος AI Σύμβουλος Καριέρας στην Ελλάδα</p>
+            </div>
+            <div className="bg-gradient-to-br from-slate-800/60 to-slate-800/30 rounded-2xl p-8 border border-slate-700/50 backdrop-blur-sm shadow-2xl">
+              <div className="flex rounded-xl bg-slate-900/60 p-1 mb-8">
+                {[['login','Σύνδεση'],['signup','Εγγραφή']].map(([mode, label]) => (
+                  <button key={mode} onClick={() => { setAuthMode(mode); setAuthError(''); }}
+                    className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${authMode === mode ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="space-y-4">
+                {authMode === 'signup' && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">Όνομα</label>
+                      <input type="text" value={authForm.firstName} onChange={e => handleAuthFormChange('firstName', e.target.value)}
+                        placeholder="Όνομα" autoComplete="given-name"
+                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900/50 border border-slate-700 hover:border-slate-600 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-slate-200 text-sm transition-all placeholder-slate-500" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">Επώνυμο</label>
+                      <input type="text" value={authForm.lastName} onChange={e => handleAuthFormChange('lastName', e.target.value)}
+                        placeholder="Επώνυμο" autoComplete="family-name"
+                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900/50 border border-slate-700 hover:border-slate-600 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-slate-200 text-sm transition-all placeholder-slate-500" />
+                    </div>
+                  </div>
+                )}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Email</label>
+                  <input type="email" value={authForm.email} onChange={e => handleAuthFormChange('email', e.target.value)}
+                    placeholder="email@example.com" autoComplete="email"
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-900/50 border border-slate-700 hover:border-slate-600 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-slate-200 text-sm transition-all placeholder-slate-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Κωδικός</label>
+                  <input type="password" value={authForm.password} onChange={e => handleAuthFormChange('password', e.target.value)}
+                    placeholder="Τουλάχιστον 6 χαρακτήρες"
+                    autoComplete={authMode === 'signup' ? 'new-password' : 'current-password'}
+                    onKeyDown={e => e.key === 'Enter' && (authMode === 'login' ? handleLogin() : handleSignUp())}
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-900/50 border border-slate-700 hover:border-slate-600 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-slate-200 text-sm transition-all placeholder-slate-500" />
+                </div>
+                {authError && authError !== 'confirm' && (
+                  <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-sm">{authError}</div>
+                )}
+                {authError === 'confirm' && (
+                  <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-sm">
+                    ✓ Σου στείλαμε email επιβεβαίωσης. Έλεγξε τα εισερχόμενα!
+                  </div>
+                )}
+                <button
+                  onClick={authMode === 'login' ? handleLogin : handleSignUp}
+                  disabled={authSubmitting || !authForm.email || !authForm.password || (authMode === 'signup' && (!authForm.firstName || !authForm.lastName))}
+                  className={`w-full py-3.5 rounded-xl font-bold text-white transition-all duration-300 mt-2 ${
+                    authSubmitting || !authForm.email || !authForm.password || (authMode === 'signup' && (!authForm.firstName || !authForm.lastName))
+                      ? 'bg-slate-700 cursor-not-allowed opacity-50'
+                      : 'bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 hover:opacity-90 hover:shadow-lg hover:shadow-violet-500/40'
+                  }`}>
+                  {authSubmitting ? 'Παρακαλώ περίμενε...' : authMode === 'login' ? 'Σύνδεση →' : 'Δημιουργία Λογαριασμού →'}
+                </button>
+              </div>
+            </div>
+            <p className="text-center text-xs text-slate-600 mt-6">Τα δεδομένα σου προστατεύονται και δεν μοιράζονται σε τρίτους.</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── MAIN APP (only when logged in) ── */}
+      {authUser && (
+      <div>
+
       {showLeadPopup && (
         <div className="fixed inset-0 flex items-end justify-center p-4 z-50 pointer-events-none">
           <div className="animate-bounce bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-2xl px-8 py-4 shadow-2xl mb-6 pointer-events-auto">
@@ -756,24 +923,30 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
             </div>
           )}
 
-          {profile && step !== 'profile' && (
-            <button
-              onClick={() => setStep('profile')}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-500/20 hover:bg-violet-500/30 border border-violet-500/40 hover:border-violet-400 transition duration-200 text-sm font-medium text-violet-300 flex-shrink-0"
-            >
-              <span className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white text-xs font-bold">
-                {profile.firstName.charAt(0)}
-              </span>
-              <span className="hidden sm:inline">Προφίλ</span>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {profile && step !== 'profile' && (
+              <button onClick={() => setStep('profile')}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-500/20 hover:bg-violet-500/30 border border-violet-500/40 hover:border-violet-400 transition duration-200 text-sm font-medium text-violet-300">
+                <span className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white text-xs font-bold">
+                  {profile.firstName.charAt(0)}
+                </span>
+                <span className="hidden sm:inline">{profile.firstName}</span>
+              </button>
+            )}
+            {step !== 'welcome' && (
+              <button onClick={resetApp} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition duration-200 text-sm font-medium">
+                <ArrowLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Αρχή</span>
+              </button>
+            )}
+            <button onClick={handleSignOut}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800/50 hover:bg-red-900/30 border border-slate-700 hover:border-red-500/40 transition duration-200 text-sm text-slate-400 hover:text-red-300">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              <span className="hidden sm:inline">Έξοδος</span>
             </button>
-          )}
-
-          {step !== 'welcome' && (
-            <button onClick={resetApp} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition duration-200 text-sm font-medium flex-shrink-0">
-              <ArrowLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">Αρχή</span>
-            </button>
-          )}
+          </div>
         </div>
       </div>
 
@@ -1364,6 +1537,9 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
         <p className="mb-3"><span className="font-semibold text-slate-300">e-Pythia</span> • AI Σύμβουλος Καριέρας</p>
         <p className="mt-3"><a href="mailto:pythiacontact@gmail.com" className="text-violet-400 hover:text-violet-300 transition-colors font-semibold">pythiacontact@gmail.com</a></p>
       </div>
+
+      </div>
+      )} {/* end authUser */}
 
       <style jsx>{`
         @keyframes fade-in { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
