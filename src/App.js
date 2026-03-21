@@ -105,6 +105,7 @@ export default function EPythia() {
   const [xpToast, setXpToast] = useState(null);
   const [emailSent, setEmailSent] = useState(false);
   const [emailSending, setEmailSending] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
 
   const resultsRef = useRef(null);
 
@@ -343,6 +344,7 @@ export default function EPythia() {
     setLeadSaved(false);
     setCurrentSessionId(null);
     setEmailSent(false);
+    setProfileSaved(false);
     setStep('questionnaire');
   };
 
@@ -363,6 +365,7 @@ export default function EPythia() {
     setFlashOption(null);
     setCurrentSessionId(null);
     setEmailSent(false);
+    setProfileSaved(false);
     setXpToast(null);
   };
 
@@ -446,6 +449,12 @@ export default function EPythia() {
       if (res.ok) setEmailSent(true);
     } catch {}
     setEmailSending(false);
+  };
+
+  const handleCreateProfile = () => {
+    saveSessionToProfile(persona, actionSteps, rating);
+    setProfileSaved(true);
+    setStep('profile');
   };
 
   const handleShare = async () => {
@@ -584,7 +593,6 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
       setRecommendations(parsed.recommendations);
       setPersona(parsed.persona);
       setActionSteps(parsed.actionSteps);
-      saveSessionToProfile(parsed.persona, parsed.actionSteps, 0);
 
       if (!leadSaved) {
         setLeadSaved(true);
@@ -1054,6 +1062,29 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
 
                 {/* Action Plan */}
                 <ActionPlan />
+
+                {/* Profile CTA */}
+                {!profileSaved && (
+                  <div className="relative overflow-hidden rounded-2xl border border-violet-500/40 bg-gradient-to-br from-violet-900/40 via-fuchsia-900/30 to-slate-900/40 backdrop-blur-sm p-8">
+                    <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-fuchsia-500/5 pointer-events-none" />
+                    <div className="relative z-10 flex flex-col sm:flex-row items-center gap-6">
+                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/30 flex-shrink-0">
+                        <Trophy className="w-8 h-8 text-white" />
+                      </div>
+                      <div className="flex-1 text-center sm:text-left">
+                        <h3 className="text-xl font-bold text-slate-100 mb-1">Δημιούργησε το Προφίλ σου</h3>
+                        <p className="text-slate-400 text-sm leading-relaxed">Κάνε track τον στόχο σου, παρακολούθησε το σχέδιο δράσης σου, κέρδισε XP και ξεκλείδωσε badges — όλα σε ένα μέρος.</p>
+                      </div>
+                      <button
+                        onClick={handleCreateProfile}
+                        className="flex-shrink-0 flex items-center gap-2 px-8 py-4 rounded-xl font-bold bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 text-white hover:opacity-90 hover:scale-105 transition-all duration-200 shadow-lg shadow-violet-500/30 whitespace-nowrap"
+                      >
+                        <Sparkles className="w-5 h-5" />
+                        Δημιούργησε το Προφίλ μου →
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Quick Actions Row */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
