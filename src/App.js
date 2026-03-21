@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Compass,
   GraduationCap,
@@ -22,8 +22,34 @@ import {
   Wrench,
   BarChart2,
   Trophy,
-  Heart
+  Heart,
+  Mail
 } from 'lucide-react';
+
+// ── Phase 3: Profile constants ──────────────────────────────────
+const PROFILE_KEY = 'epythia_profile';
+
+const BADGES = {
+  first_quest:   { name: 'Πρώτη Αποστολή', emoji: '🌟', desc: 'Ολοκλήρωσες την πρώτη σου ανάλυση' },
+  action_taker:  { name: 'Πρώτη Δράση',   emoji: '⚡', desc: 'Ολοκλήρωσες ένα βήμα δράσης' },
+  plan_complete: { name: 'Πλήρες Πλάνο',  emoji: '✅', desc: 'Ολοκλήρωσες όλα τα βήματα δράσης' },
+  rated:         { name: 'Κριτής',         emoji: '⭐', desc: 'Αξιολόγησες τα αποτελέσματά σου' },
+  explorer:      { name: 'Εξερευνητής',    emoji: '🗺️', desc: 'Ολοκλήρωσες 2 αναλύσεις' },
+  veteran:       { name: 'Βετεράνος',      emoji: '🏆', desc: 'Ολοκλήρωσες 3 αναλύσεις' },
+};
+const BADGE_ORDER = ['first_quest', 'action_taker', 'plan_complete', 'rated', 'explorer', 'veteran'];
+
+const getLevel = (xp) => {
+  if (xp >= 500) return { level: 4, name: 'Μάστερ',      nextXP: null, min: 500 };
+  if (xp >= 250) return { level: 3, name: 'Στρατηγός',   nextXP: 500,  min: 250 };
+  if (xp >= 100) return { level: 2, name: 'Εξερευνητής', nextXP: 250,  min: 100 };
+  return           { level: 1, name: 'Αρχάριος',          nextXP: 100,  min: 0   };
+};
+
+const loadProfileFromStorage = () => {
+  try { return JSON.parse(localStorage.getItem(PROFILE_KEY)); } catch { return null; }
+};
+const saveProfileToStorage = (p) => localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
 
 // ── Persona config ──────────────────────────────────────────────
 const personaConfig = {
@@ -74,8 +100,19 @@ export default function EPythia() {
   const [leadSaved, setLeadSaved] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [flashOption, setFlashOption] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [currentSessionId, setCurrentSessionId] = useState(null);
+  const [xpToast, setXpToast] = useState(null);
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailSending, setEmailSending] = useState(false);
 
   const resultsRef = useRef(null);
+
+  // Load profile from localStorage on mount
+  useEffect(() => {
+    const saved = loadProfileFromStorage();
+    if (saved) setProfile(saved);
+  }, []);
 
   // ── Static data ────────────────────────────────────────────────
 
@@ -258,7 +295,42 @@ export default function EPythia() {
     setTimeout(() => { setFlashOption(null); advanceQuestion(); }, 280);
   };
 
-  const toggleStep = (idx) => setCheckedSteps((p) => ({ ...p, [idx]: !p[idx] }));
+  const toggleStep = (idx) => {
+    setCheckedSteps((prev) => {
+      const next = { ...prev, [idx]: !prev[idx] };
+
+      if (currentSessionId) {
+        const p = loadProfileFromStorage();
+        if (p) {
+          const si = p.sessions.findIndex(s => s.id === currentSessionId);
+          if (si !== -1) {
+            p.sessions[si].checkedSteps = next;
+            const isNowChecked = !prev[idx];
+            let gained = 0;
+            const earned = [];
+            if (isNowChecked) {
+              gained += 15;
+              if (!p.badges.includes('action_taker')) { p.badges.push('action_taker'); earned.push('action_taker'); }
+              const allDone = actionSteps.every((_, i) => next[i]);
+              const wasDone = actionSteps.every((_, i) => prev[i]);
+              if (allDone && !wasDone) {
+                gained += 50;
+                if (!p.badges.includes('plan_complete')) { p.badges.push('plan_complete'); earned.push('plan_complete'); }
+              }
+            }
+            if (gained > 0) {
+              p.totalXP += gained;
+              setXpToast({ xp: gained, newBadges: earned });
+              setTimeout(() => setXpToast(null), 3000);
+            }
+            saveProfileToStorage(p);
+            setProfile({ ...p });
+          }
+        }
+      }
+      return next;
+    });
+  };
 
   const retakeQuestionnaire = () => {
     setFormData({});
@@ -269,6 +341,8 @@ export default function EPythia() {
     setCheckedSteps({});
     setRating(0);
     setLeadSaved(false);
+    setCurrentSessionId(null);
+    setEmailSent(false);
     setStep('questionnaire');
   };
 
@@ -287,10 +361,92 @@ export default function EPythia() {
     setLeadSaved(false);
     setCurrentQuestionIndex(0);
     setFlashOption(null);
+    setCurrentSessionId(null);
+    setEmailSent(false);
+    setXpToast(null);
   };
 
   const isContactComplete = () =>
     contactInfo.firstName.trim() && contactInfo.lastName.trim() && contactInfo.email.includes('@');
+
+  const saveSessionToProfile = (personaArg, steps, rat) => {
+    const sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    setCurrentSessionId(sessionId);
+
+    const session = {
+      id: sessionId,
+      date: new Date().toISOString(),
+      userType,
+      subType: highschoolType || employeeSector || '',
+      persona: personaArg,
+      actionSteps: steps,
+      checkedSteps: {},
+      rating: rat,
+    };
+
+    const existing = loadProfileFromStorage();
+    const sessions = existing ? [...existing.sessions, session] : [session];
+    const existingXP = existing?.totalXP || 0;
+    const existingBadges = [...(existing?.badges || [])];
+
+    let gained = sessions.length === 1 ? 50 : sessions.length === 2 ? 75 : 100;
+    const earned = [];
+
+    if (sessions.length === 1 && !existingBadges.includes('first_quest')) { existingBadges.push('first_quest'); earned.push('first_quest'); }
+    if (sessions.length === 2 && !existingBadges.includes('explorer'))    { existingBadges.push('explorer');   earned.push('explorer'); }
+    if (sessions.length >= 3  && !existingBadges.includes('veteran'))     { existingBadges.push('veteran');    earned.push('veteran'); }
+
+    const newProfile = {
+      firstName: contactInfo.firstName,
+      lastName: contactInfo.lastName,
+      email: contactInfo.email,
+      totalXP: existingXP + gained,
+      badges: existingBadges,
+      sessions,
+    };
+
+    saveProfileToStorage(newProfile);
+    setProfile(newProfile);
+    setXpToast({ xp: gained, newBadges: earned });
+    setTimeout(() => setXpToast(null), 4000);
+  };
+
+  const handleRating = (stars) => {
+    setRating(stars);
+    if (!currentSessionId || stars === 0) return;
+    const p = loadProfileFromStorage();
+    if (!p) return;
+    const si = p.sessions.findIndex(s => s.id === currentSessionId);
+    if (si === -1 || p.sessions[si].rated) return;
+    p.sessions[si].rating = stars;
+    p.sessions[si].rated = true;
+    p.totalXP += 10;
+    const earned = [];
+    if (!p.badges.includes('rated')) { p.badges.push('rated'); earned.push('rated'); }
+    setXpToast({ xp: 10, newBadges: earned });
+    setTimeout(() => setXpToast(null), 3000);
+    saveProfileToStorage(p);
+    setProfile({ ...p });
+  };
+
+  const handleEmailResults = async () => {
+    setEmailSending(true);
+    try {
+      const res = await fetch('/.netlify/functions/send-results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: contactInfo.firstName,
+          email: contactInfo.email,
+          persona,
+          recommendations,
+          actionSteps,
+        }),
+      });
+      if (res.ok) setEmailSent(true);
+    } catch {}
+    setEmailSending(false);
+  };
 
   const handleShare = async () => {
     const text = `Ανακάλυψα το καριερικό μου προφίλ στην e-Pythia!${persona ? ` Είμαι: ${persona.name} — ${persona.tagline}` : ''}\n\nΔοκίμασε κι εσύ: https://epythia.netlify.app`;
@@ -428,6 +584,7 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
       setRecommendations(parsed.recommendations);
       setPersona(parsed.persona);
       setActionSteps(parsed.actionSteps);
+      saveSessionToProfile(parsed.persona, parsed.actionSteps, 0);
 
       if (!leadSaved) {
         setLeadSaved(true);
@@ -532,6 +689,20 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
         </div>
       )}
 
+      {/* XP Toast */}
+      {xpToast && (
+        <div className="fixed top-24 right-4 z-50 animate-slide-in-right">
+          <div className="bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-2xl px-6 py-4 shadow-2xl shadow-violet-500/30 border border-violet-400/30">
+            <p className="text-white font-bold text-lg">+{xpToast.xp} XP 🎉</p>
+            {xpToast.newBadges.length > 0 && (
+              <p className="text-violet-200 text-sm mt-1">
+                Νέο badge: {xpToast.newBadges.map(b => `${BADGES[b].emoji} ${BADGES[b].name}`).join(', ')}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="sticky top-0 bg-slate-900/70 border-b border-slate-700/30 backdrop-blur-2xl z-50 shadow-lg">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center gap-4">
@@ -575,6 +746,18 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
                 );
               })}
             </div>
+          )}
+
+          {profile && step !== 'profile' && (
+            <button
+              onClick={() => setStep('profile')}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-500/20 hover:bg-violet-500/30 border border-violet-500/40 hover:border-violet-400 transition duration-200 text-sm font-medium text-violet-300 flex-shrink-0"
+            >
+              <span className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white text-xs font-bold">
+                {profile.firstName.charAt(0)}
+              </span>
+              <span className="hidden sm:inline">Προφίλ</span>
+            </button>
           )}
 
           {step !== 'welcome' && (
@@ -883,7 +1066,7 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
                     <p className="text-xs text-slate-500 font-medium">Πόσο χρήσιμο ήταν;</p>
                     <div className="flex gap-1">
                       {[1,2,3,4,5].map(s => (
-                        <button key={s} onClick={() => setRating(s)} className="transition-transform hover:scale-110 active:scale-95">
+                        <button key={s} onClick={() => handleRating(s)} className="transition-transform hover:scale-110 active:scale-95">
                           <Star className={`w-6 h-6 transition-colors ${s<=rating ? 'text-amber-400 fill-amber-400' : 'text-slate-600 hover:text-amber-400/60'}`} />
                         </button>
                       ))}
@@ -898,6 +1081,27 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
                     {shareSuccess ? <><Check className="w-5 h-5" />Αντιγράφηκε!</> : <><Share2 className="w-5 h-5 text-violet-400" />Κοινοποίησε</>}
                   </button>
                 </div>
+
+                {/* Email Results */}
+                <button
+                  onClick={handleEmailResults}
+                  disabled={emailSent || emailSending}
+                  className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold border transition-all duration-200 ${
+                    emailSent
+                      ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+                      : emailSending
+                      ? 'bg-slate-800/50 border-slate-700 text-slate-500 cursor-wait'
+                      : 'bg-gradient-to-br from-slate-800/60 to-slate-800/30 border-slate-700 hover:border-violet-500/50 text-slate-300 hover:text-white'
+                  }`}
+                >
+                  {emailSent ? (
+                    <><Check className="w-4 h-4" /> Στάλθηκε στο {contactInfo.email}</>
+                  ) : emailSending ? (
+                    <>Αποστολή...</>
+                  ) : (
+                    <><Mail className="w-4 h-4 text-violet-400" /> Στείλε αποτελέσματα στο email μου</>
+                  )}
+                </button>
 
                 {/* Coaching CTA */}
                 <div className="bg-gradient-to-br from-cyan-900/30 via-violet-900/30 to-fuchsia-900/30 rounded-2xl p-10 border border-violet-500/30 backdrop-blur-sm">
@@ -939,6 +1143,191 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
         )}
       </div>
 
+      {/* ── PROFILE ── */}
+      {step === 'profile' && profile && (
+        <div className="max-w-7xl mx-auto px-6 py-16">
+        <div className="max-w-4xl mx-auto animate-fade-in space-y-6">
+          {/* Level Header Card */}
+          {(() => {
+            const levelInfo = getLevel(profile.totalXP);
+            const pct = levelInfo.nextXP
+              ? Math.round(((profile.totalXP - levelInfo.min) / (levelInfo.nextXP - levelInfo.min)) * 100)
+              : 100;
+            return (
+              <div className="bg-gradient-to-br from-slate-800/50 to-slate-800/20 rounded-2xl p-8 border border-slate-700/50 backdrop-blur-sm">
+                <div className="flex items-center gap-5 mb-6">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-violet-500/30 flex-shrink-0">
+                    {profile.firstName.charAt(0)}
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-100">Γεια σου, {profile.firstName}!</h2>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-sm font-bold text-violet-300 bg-violet-500/20 px-3 py-0.5 rounded-full border border-violet-500/30">
+                        Lv.{levelInfo.level} — {levelInfo.name}
+                      </span>
+                      <span className="text-sm text-slate-400">{profile.totalXP} XP</span>
+                    </div>
+                  </div>
+                </div>
+                {levelInfo.nextXP && (
+                  <div>
+                    <div className="flex justify-between text-xs text-slate-400 mb-2">
+                      <span>{profile.totalXP} XP</span>
+                      <span>{levelInfo.nextXP - profile.totalXP} XP μέχρι Level {levelInfo.level + 1}</span>
+                    </div>
+                    <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                )}
+                {!levelInfo.nextXP && (
+                  <div className="mt-2 p-3 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 text-center">
+                    <p className="text-amber-300 font-bold">🏆 Έχεις φτάσει στο μέγιστο level!</p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Stats row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {[
+              { val: profile.sessions.length, label: 'Αναλύσεις', color: 'text-cyan-400' },
+              { val: profile.totalXP, label: 'Συνολικά XP', color: 'text-violet-400' },
+              { val: profile.badges.length, label: 'Badges', color: 'text-fuchsia-400' },
+              { val: profile.sessions.reduce((acc, s) => acc + Object.values(s.checkedSteps || {}).filter(Boolean).length, 0), label: 'Βήματα ✅', color: 'text-emerald-400' },
+            ].map(({ val, label, color }) => (
+              <div key={label} className="bg-gradient-to-br from-slate-800/50 to-slate-800/20 rounded-xl p-5 border border-slate-700/50 text-center">
+                <div className={`text-3xl font-extrabold ${color}`}>{val}</div>
+                <div className="text-xs text-slate-400 mt-1">{label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Latest Persona */}
+          {profile.sessions.length > 0 && profile.sessions[profile.sessions.length - 1].persona && (() => {
+            const p = profile.sessions[profile.sessions.length - 1].persona;
+            const cfg = personaConfig[p.type] || personaConfig.explorer;
+            const Icon = cfg.icon;
+            return (
+              <div className={`bg-gradient-to-br ${cfg.bg} rounded-2xl p-6 border ${cfg.border} backdrop-blur-sm`}>
+                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Τελευταίο Προφίλ</p>
+                <div className="flex items-center gap-4">
+                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${cfg.gradient} flex items-center justify-center shadow-lg flex-shrink-0`}>
+                    <Icon className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <h3 className={`text-xl font-extrabold bg-gradient-to-r ${cfg.gradient} bg-clip-text text-transparent`}>{p.name}</h3>
+                    <p className="text-slate-300 text-sm">{p.tagline}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Badges */}
+          <div className="bg-gradient-to-br from-slate-800/50 to-slate-800/20 rounded-2xl p-8 border border-slate-700/50 backdrop-blur-sm">
+            <h3 className="text-xl font-bold text-slate-100 mb-6">Badges ({profile.badges.length}/{BADGE_ORDER.length})</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {BADGE_ORDER.map(badgeId => {
+                const badge = BADGES[badgeId];
+                const earned = profile.badges.includes(badgeId);
+                return (
+                  <div key={badgeId} className={`p-4 rounded-xl border text-center transition-all ${
+                    earned ? 'bg-violet-500/15 border-violet-500/40' : 'bg-slate-900/30 border-slate-700/50 opacity-40'
+                  }`}>
+                    <div className="text-3xl mb-2">{badge.emoji}</div>
+                    <p className={`text-sm font-bold ${earned ? 'text-slate-100' : 'text-slate-500'}`}>{badge.name}</p>
+                    <p className="text-xs text-slate-500 mt-1">{badge.desc}</p>
+                    {!earned && <p className="text-xs text-slate-600 mt-2">🔒 Κλειδωμένο</p>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Action plan from latest session */}
+          {(() => {
+            const latest = profile.sessions[profile.sessions.length - 1];
+            if (!latest?.actionSteps?.length) return null;
+            const checked = latest.checkedSteps || {};
+            const done = Object.values(checked).filter(Boolean).length;
+            const pct = Math.round((done / latest.actionSteps.length) * 100);
+            return (
+              <div className="bg-gradient-to-br from-slate-800/50 to-slate-800/20 rounded-2xl p-8 border border-slate-700/50 backdrop-blur-sm">
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-100">Σχέδιο Δράσης</h3>
+                    <p className="text-slate-400 text-sm mt-0.5">Τελευταία ανάλυση</p>
+                  </div>
+                  <span className="text-2xl font-bold text-violet-400">{pct}%</span>
+                </div>
+                <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden mb-5">
+                  <div className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                </div>
+                <div className="space-y-2">
+                  {latest.actionSteps.map((s, i) => (
+                    <div key={i} className={`flex items-start gap-3 p-3 rounded-lg ${checked[i] ? 'opacity-60' : ''}`}>
+                      <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center mt-0.5 ${checked[i] ? 'bg-emerald-500 border-emerald-500' : 'border-slate-600'}`}>
+                        {checked[i] && <Check className="w-3 h-3 text-white" />}
+                      </div>
+                      <span className={`text-sm ${checked[i] ? 'line-through text-slate-500' : 'text-slate-300'}`}>
+                        <span className="font-semibold text-violet-400 mr-1">Βήμα {i + 1}.</span>{s}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Session History */}
+          {profile.sessions.length > 0 && (
+            <div className="bg-gradient-to-br from-slate-800/50 to-slate-800/20 rounded-2xl p-8 border border-slate-700/50 backdrop-blur-sm">
+              <h3 className="text-xl font-bold text-slate-100 mb-6">Ιστορικό Αναλύσεων</h3>
+              <div className="space-y-3">
+                {[...profile.sessions].reverse().map((s) => {
+                  const pCfg = s.persona ? personaConfig[s.persona.type] || personaConfig.explorer : null;
+                  const PIcon = pCfg?.icon;
+                  const typeLabels = { highschool: 'Μαθητής', university: 'Φοιτητής', employee: 'Επαγγελματίας' };
+                  return (
+                    <div key={s.id} className="flex items-center gap-4 p-4 rounded-xl bg-slate-900/40 border border-slate-700/50">
+                      {PIcon && pCfg && (
+                        <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${pCfg.gradient} flex items-center justify-center flex-shrink-0`}>
+                          <PIcon className="w-5 h-5 text-white" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-slate-200 text-sm">{s.persona?.name || typeLabels[s.userType] || s.userType}</p>
+                        <p className="text-xs text-slate-500">{new Date(s.date).toLocaleDateString('el-GR')} • {typeLabels[s.userType]}</p>
+                      </div>
+                      {s.rating > 0 && (
+                        <div className="flex gap-0.5">
+                          {[1,2,3,4,5].map(st => <Star key={st} className={`w-3 h-3 ${st <= s.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-700'}`} />)}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pb-8">
+            <button onClick={resetApp}
+              className="flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-bold bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 text-white hover:opacity-90 transition-all duration-200 shadow-lg shadow-violet-500/30">
+              <Sparkles className="w-4 h-4" />Νέα Ανάλυση
+            </button>
+            <button onClick={() => setStep('welcome')}
+              className="flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-all duration-200">
+              <ArrowLeft className="w-4 h-4" />Αρχική
+            </button>
+          </div>
+        </div>
+        </div>
+      )}
+
       {/* Footer */}
       <div className="text-center py-10 text-slate-500 text-sm border-t border-slate-800/50 mt-16">
         <p className="mb-3"><span className="font-semibold text-slate-300">e-Pythia</span> • AI Σύμβουλος Καριέρας</p>
@@ -952,6 +1341,8 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
         .animate-slide-in { animation: slide-in 0.3s ease-out; }
         @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
         .animate-bounce { animation: bounce 0.6s infinite; }
+        @keyframes slide-in-right { from{opacity:0;transform:translateX(100%)} to{opacity:1;transform:translateX(0)} }
+        .animate-slide-in-right { animation: slide-in-right 0.35s ease-out; }
       `}</style>
     </div>
   );
