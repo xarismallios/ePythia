@@ -502,7 +502,7 @@ export default function EPythia() {
     ${actionSteps.length ? `<div class="action-plan"><div class="section-title" style="margin-top:0">Σχέδιο Δράσης</div>${actionSteps.map((s, i) => `<div class="action-item">${i + 1}. ${s}</div>`).join('')}</div>` : ''}
   </div>
   <div class="footer"><span>epythia.netlify.app • pythiacontact@gmail.com</span><span>Δημιουργήθηκε με e-Pythia AI</span></div>
-  <script>window.onload=()=>window.print()<\/script>
+  <script>window.onload=()=>window.print()</script>
 </body></html>`;
     const w = window.open('', '_blank');
     w.document.write(html);
