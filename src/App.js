@@ -771,8 +771,8 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
         </div>
       )}
 
-      {/* ── AUTH PAGE ── */}
-      {!authUser && !authLoading && (
+      {/* ── AUTH PAGE ── (temporarily disabled) */}
+      {false && !authUser && !authLoading && (
         <div className="min-h-screen flex items-center justify-center px-6 py-16">
           <div className="w-full max-w-md animate-fade-in">
             <div className="text-center mb-10">
@@ -844,8 +844,8 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
         </div>
       )}
 
-      {/* ── MAIN APP (only when logged in) ── */}
-      {authUser && (
+      {/* ── MAIN APP ── */}
+      {true && (
       <div>
 
       {showLeadPopup && (
