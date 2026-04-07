@@ -328,7 +328,7 @@ export default function EPythia() {
     { text: 'Σαν να μίλησα με πραγματικό σύμβουλο καριέρας. Εντυπωσιακά εξατομικευμένο.', name: 'Γιώργος Α.', role: 'Φοιτητής, 26 ετών — Πάτρα', gradient: 'from-fuchsia-500 to-pink-500' },
   ];
 
-  const stepLabels = ['Προφίλ', 'Ερωτήσεις', 'Στοιχεία', 'Αποτελέσματα'];
+  const stepLabels = ['Προφίλ', 'Πακέτο', 'Ερωτήσεις', 'Στοιχεία', 'Αποτελέσματα'];
 
   // ── Derived ────────────────────────────────────────────────────
 
@@ -346,9 +346,10 @@ export default function EPythia() {
 
   const getStepNumber = () => {
     if (step === 'welcome' || step === 'employee-sector-select' || step === 'highschool-type-select') return 1;
-    if (step === 'questionnaire') return 2;
-    if (step === 'contact') return 3;
-    return 4;
+    if (step === 'choose-path') return 2;
+    if (step === 'questionnaire') return 3;
+    if (step === 'contact') return 4;
+    return 5;
   };
 
   // ── Profile fetch ──────────────────────────────────────────────
@@ -1213,7 +1214,7 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
             </div>
 
             {/* Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-14">
+            <div className="flex flex-col gap-5 mb-14 max-w-xl mx-auto w-full">
 
               {/* Free */}
               <div className="flex flex-col p-8 rounded-xl bg-surface-container-low border border-outline-variant/20 transition-all duration-300 hover:-translate-y-1 shadow-sm">
@@ -1224,7 +1225,7 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
                   </div>
                   <div className="text-3xl font-headline font-extrabold text-primary">0€</div>
                 </div>
-                <div className="flex-grow space-y-4 mb-8">
+                <div className="space-y-4 mb-8">
                   {[
                     { icon: 'checklist', text: 'Ερωτηματολόγιο (~15 ερωτήσεις)' },
                     { icon: 'description', text: 'Χάρτης Καριέρας AI (soft edition)' },
@@ -1237,12 +1238,6 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
                       <p className="font-body text-on-surface-variant text-sm leading-snug">{text}</p>
                     </div>
                   ))}
-                  <div className="pt-4 opacity-40 pointer-events-none">
-                    <div className="flex items-center gap-3">
-                      <span className="material-symbols-outlined text-outline-variant text-[20px]">lock</span>
-                      <p className="font-body text-outline-variant text-sm italic">Γνωστική χαρτογράφηση & premium PDF</p>
-                    </div>
-                  </div>
                 </div>
                 <button onClick={startFreeFlow}
                   className="w-full py-4 rounded-xl font-headline font-bold text-secondary border-2 border-secondary hover:bg-secondary-container/20 transition-all active:scale-95">
@@ -1250,46 +1245,15 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
                 </button>
               </div>
 
-              {/* Premium */}
-              <div className="relative flex flex-col p-8 rounded-xl bg-surface-container-lowest border-2 border-primary transition-all duration-300 hover:-translate-y-1 shadow-lg overflow-hidden">
-                <div className="absolute top-0 right-0 bg-primary text-on-primary px-5 py-1.5 rounded-bl-xl font-label text-[10px] font-bold uppercase tracking-[0.15em]">
-                  Προτείνεται
+              {/* Premium — coming soon teaser */}
+              <div className="flex items-center gap-4 p-5 rounded-xl border border-dashed border-primary/30 bg-primary/5">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <span className="material-symbols-outlined text-primary text-[20px]">lock</span>
                 </div>
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <span className="font-label text-[0.7rem] font-bold uppercase tracking-widest text-secondary mb-2 block">Πλήρης Ανάλυση</span>
-                    <h2 className="font-headline font-bold text-2xl text-on-surface">Premium Πακέτο</h2>
-                  </div>
-                  <div className="text-3xl font-headline font-extrabold text-primary">19.99€</div>
+                <div className="flex-1">
+                  <p className="font-label font-bold text-primary text-sm">Premium Πακέτο — 19.99€</p>
+                  <p className="text-xs text-on-surface-variant mt-0.5">Γνωστικό ερωτηματολόγιο, AI roadmap & premium PDF. <span className="font-semibold text-secondary">Σύντομα κοντά σας.</span></p>
                 </div>
-                <div className="flex-grow space-y-4 mb-8">
-                  {[
-                    { icon: 'verified', text: 'Στοχευμένες ερωτήσεις ανά κατηγορία' },
-                    { icon: 'psychology', text: 'Γνωστικό ερωτηματολόγιο (cognitive test)' },
-                    { icon: 'auto_stories', text: 'Premium PDF αποτελέσματα & ανάλυση' },
-                  ].map(({ icon, text }) => (
-                    <div key={text} className="flex items-center gap-3">
-                      <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                        <span className="material-symbols-outlined text-[14px] text-on-primary" style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
-                      </div>
-                      <p className="font-body text-on-surface font-medium text-sm leading-snug">{text}</p>
-                    </div>
-                  ))}
-                  <div className="mt-4 p-4 rounded-xl bg-surface-container-low flex items-center gap-4 border border-outline-variant/10">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-container flex items-center justify-center flex-shrink-0">
-                      <span className="material-symbols-outlined text-on-primary text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>magic_button</span>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-label font-bold text-primary uppercase tracking-wider">Bonus Feature</p>
-                      <p className="text-sm font-body text-on-surface-variant">Εξατομικευμένο AI roadmap καριέρας</p>
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => alert('Σύντομα διαθέσιμο! Το Premium πακέτο έρχεται σύντομα.')}
-                  className="w-full py-4 rounded-xl font-headline font-bold text-on-primary bg-gradient-to-br from-primary to-primary-container shadow-lg hover:opacity-90 transition-all active:scale-95">
-                  Ξεκλείδωσε το Δυναμικό μου →
-                </button>
               </div>
             </div>
 
