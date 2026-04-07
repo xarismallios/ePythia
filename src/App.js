@@ -73,7 +73,12 @@ const parseAIResponse = (text) => {
 
   const personaMatch = text.match(/---PERSONA_START---([\s\S]*?)---PERSONA_END---/);
   if (personaMatch) {
-    try { persona = JSON.parse(personaMatch[1].trim()); } catch {}
+    try {
+      persona = JSON.parse(personaMatch[1].trim());
+      // Strip any unreplaced placeholders like [GREEK_NAME], [ONE_LINE_GREEK] etc.
+      if (persona.name && persona.name.includes('[')) persona.name = '';
+      if (persona.tagline && persona.tagline.includes('[')) persona.tagline = '';
+    } catch {}
     recommendations = recommendations.replace(/---PERSONA_START---[\s\S]*?---PERSONA_END---/, '').trim();
   }
 
@@ -781,14 +786,22 @@ Markdown με sections:
 
 Χωρίς χαιρετισμούς. Ξεκίνα από το πρώτο section.
 
-Μετά τις συστάσεις πρόσθεσε ΑΚΡΙΒΩΣ (valid JSON, χωρίς code fences):
+Μετά τις συστάσεις πρόσθεσε ΑΚΡΙΒΩΣ (valid JSON, χωρίς code fences).
+Αντικατέστησε ΟΛΕΣ τις τιμές με πραγματικό περιεχόμενο στα ελληνικά. ΜΗΝ αφήσεις κανένα placeholder.
+
+Παράδειγμα σωστής συμπλήρωσης:
+---PERSONA_START---
+{"name":"Ο Δημιουργικός Οραματιστής","tagline":"Μετατρέπεις ιδέες σε πραγματικότητα με τόλμη και φαντασία","type":"innovator"}
+---PERSONA_END---
+
+Τώρα συμπλήρωσε για τον συγκεκριμένο χρήστη:
 
 ---PERSONA_START---
-{"name":"[GREEK_NAME]","tagline":"[ONE_LINE_GREEK]","type":"[innovator|builder|analyst|leader|explorer|caregiver]"}
+{"name":"<δώσε έναν ελληνικό τίτλο persona>","tagline":"<μία πρόταση στα ελληνικά που περιγράφει τον χρήστη>","type":"<innovator|builder|analyst|leader|explorer|caregiver>"}
 ---PERSONA_END---
 
 ---ACTIONS_START---
-{"steps":["[ACTION_1_GREEK]","[ACTION_2]","[ACTION_3]","[ACTION_4]","[ACTION_5]"]}
+{"steps":["<βήμα 1 στα ελληνικά>","<βήμα 2>","<βήμα 3>","<βήμα 4>","<βήμα 5>"]}
 ---ACTIONS_END---
 
 ---TRAITS_START---
