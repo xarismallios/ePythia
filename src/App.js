@@ -111,6 +111,7 @@ export default function EPythia() {
   const [authSubmitting, setAuthSubmitting] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [testimonialIdx, setTestimonialIdx] = useState(0);
+  const [chatLoading, setChatLoading] = useState(false);
 
   const resultsRef = useRef(null);
 
@@ -197,17 +198,29 @@ export default function EPythia() {
     },
   ];
 
-  const handleChatSubmit = () => {
-    if (!chatInput.trim()) return;
-    const lower = chatInput.toLowerCase();
-    if (lower.includes('μαθητ') || lower.includes('λύκειο') || lower.includes('σχολείο') || lower.includes('σπουδ')) {
-      handleUserTypeSelect('highschool');
-    } else if (lower.includes('φοιτητ') || lower.includes('πανεπιστήμ') || lower.includes('αποφοίτ')) {
-      handleUserTypeSelect('university');
-    } else if (lower.includes('εργ') || lower.includes('δουλ') || lower.includes('καριέρα') || lower.includes('υπάλλ') || lower.includes('ελεύθερ')) {
-      handleUserTypeSelect('employee');
-    } else {
-      handleUserTypeSelect('highschool');
+  const handleChatSubmit = async () => {
+    if (!chatInput.trim() || chatLoading) return;
+    setChatLoading(true);
+    try {
+      const res = await fetch('/.netlify/functions/classify-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: chatInput }),
+      });
+      const data = await res.json();
+      const detected = data.userType || 'university';
+      setUserType(detected);
+      setFormData({});
+      setCurrentQuestionIndex(0);
+      setStep('choose-path');
+    } catch {
+      // Fallback: go to choose-path with university as default
+      setUserType('university');
+      setFormData({});
+      setCurrentQuestionIndex(0);
+      setStep('choose-path');
+    } finally {
+      setChatLoading(false);
     }
   };
 
@@ -412,8 +425,13 @@ export default function EPythia() {
     setUserType(type);
     setFormData({});
     setCurrentQuestionIndex(0);
-    if (type === 'employee') setStep('employee-sector-select');
-    else if (type === 'highschool') setStep('highschool-type-select');
+    setStep('choose-path');
+  };
+
+  // Called when user picks Free on the choose-path screen
+  const startFreeFlow = () => {
+    if (userType === 'employee') setStep('employee-sector-select');
+    else if (userType === 'highschool') setStep('highschool-type-select');
     else setStep('questionnaire');
   };
 
@@ -1060,10 +1078,12 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
                   />
                   <button
                     onClick={handleChatSubmit}
-                    disabled={!chatInput.trim()}
-                    className={`flex-shrink-0 px-6 py-3 rounded-xl font-label font-semibold text-base transition-all duration-200 ${chatInput.trim() ? 'bg-primary text-on-primary hover:opacity-90 shadow-sm' : 'bg-surface-container text-outline cursor-not-allowed'}`}
+                    disabled={!chatInput.trim() || chatLoading}
+                    className={`flex-shrink-0 px-6 py-3 rounded-xl font-label font-semibold text-base transition-all duration-200 flex items-center gap-2 ${chatInput.trim() && !chatLoading ? 'bg-primary text-on-primary hover:opacity-90 shadow-sm' : 'bg-surface-container text-outline cursor-not-allowed'}`}
                   >
-                    Εκκίνηση →
+                    {chatLoading ? (
+                      <><div className="w-4 h-4 border-2 border-outline border-t-primary rounded-full animate-spin" />Ανάλυση...</>
+                    ) : 'Εκκίνηση →'}
                   </button>
                 </div>
               </div>
@@ -1176,6 +1196,128 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
                 </div>
               </div>
             </section>
+          </div>
+        )}
+
+        {/* ── CHOOSE PATH ── */}
+        {step === 'choose-path' && (
+          <div className="max-w-3xl mx-auto animate-fade-in py-4">
+            {/* Hero */}
+            <div className="text-center mb-10">
+              <h1 className="font-headline font-extrabold text-[2.75rem] leading-tight text-primary mb-3 tracking-tight">
+                Διάλεξε τη Διαδρομή σου
+              </h1>
+              <p className="font-body text-on-surface-variant text-lg max-w-xl mx-auto leading-relaxed">
+                Επίλεξε το επίπεδο ανάλυσης που σου ταιριάζει. Και οι δύο οδηγούν σε εξατομικευμένο χάρτη καριέρας.
+              </p>
+            </div>
+
+            {/* Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-14">
+
+              {/* Free */}
+              <div className="flex flex-col p-8 rounded-xl bg-surface-container-low border border-outline-variant/20 transition-all duration-300 hover:-translate-y-1 shadow-sm">
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <span className="font-label text-[0.7rem] font-bold uppercase tracking-widest text-secondary mb-2 block">Βασική Πρόσβαση</span>
+                    <h2 className="font-headline font-bold text-2xl text-on-surface">Δωρεάν Πακέτο</h2>
+                  </div>
+                  <div className="text-3xl font-headline font-extrabold text-primary">0€</div>
+                </div>
+                <div className="flex-grow space-y-4 mb-8">
+                  {[
+                    { icon: 'checklist', text: 'Ερωτηματολόγιο (~15 ερωτήσεις)' },
+                    { icon: 'description', text: 'Χάρτης Καριέρας AI (soft edition)' },
+                    { icon: 'task_alt', text: 'Σχέδιο Δράσης 5 βημάτων' },
+                  ].map(({ icon, text }) => (
+                    <div key={text} className="flex items-center gap-3">
+                      <div className="w-6 h-6 rounded-full bg-secondary-container flex items-center justify-center flex-shrink-0">
+                        <span className="material-symbols-outlined text-[14px] text-on-secondary-container" style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
+                      </div>
+                      <p className="font-body text-on-surface-variant text-sm leading-snug">{text}</p>
+                    </div>
+                  ))}
+                  <div className="pt-4 opacity-40 pointer-events-none">
+                    <div className="flex items-center gap-3">
+                      <span className="material-symbols-outlined text-outline-variant text-[20px]">lock</span>
+                      <p className="font-body text-outline-variant text-sm italic">Γνωστική χαρτογράφηση & premium PDF</p>
+                    </div>
+                  </div>
+                </div>
+                <button onClick={startFreeFlow}
+                  className="w-full py-4 rounded-xl font-headline font-bold text-secondary border-2 border-secondary hover:bg-secondary-container/20 transition-all active:scale-95">
+                  Ξεκίνα Δωρεάν →
+                </button>
+              </div>
+
+              {/* Premium */}
+              <div className="relative flex flex-col p-8 rounded-xl bg-surface-container-lowest border-2 border-primary transition-all duration-300 hover:-translate-y-1 shadow-lg overflow-hidden">
+                <div className="absolute top-0 right-0 bg-primary text-on-primary px-5 py-1.5 rounded-bl-xl font-label text-[10px] font-bold uppercase tracking-[0.15em]">
+                  Προτείνεται
+                </div>
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <span className="font-label text-[0.7rem] font-bold uppercase tracking-widest text-secondary mb-2 block">Πλήρης Ανάλυση</span>
+                    <h2 className="font-headline font-bold text-2xl text-on-surface">Premium Πακέτο</h2>
+                  </div>
+                  <div className="text-3xl font-headline font-extrabold text-primary">19.99€</div>
+                </div>
+                <div className="flex-grow space-y-4 mb-8">
+                  {[
+                    { icon: 'verified', text: 'Στοχευμένες ερωτήσεις ανά κατηγορία' },
+                    { icon: 'psychology', text: 'Γνωστικό ερωτηματολόγιο (cognitive test)' },
+                    { icon: 'auto_stories', text: 'Premium PDF αποτελέσματα & ανάλυση' },
+                  ].map(({ icon, text }) => (
+                    <div key={text} className="flex items-center gap-3">
+                      <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                        <span className="material-symbols-outlined text-[14px] text-on-primary" style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
+                      </div>
+                      <p className="font-body text-on-surface font-medium text-sm leading-snug">{text}</p>
+                    </div>
+                  ))}
+                  <div className="mt-4 p-4 rounded-xl bg-surface-container-low flex items-center gap-4 border border-outline-variant/10">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-container flex items-center justify-center flex-shrink-0">
+                      <span className="material-symbols-outlined text-on-primary text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>magic_button</span>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-label font-bold text-primary uppercase tracking-wider">Bonus Feature</p>
+                      <p className="text-sm font-body text-on-surface-variant">Εξατομικευμένο AI roadmap καριέρας</p>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => alert('Σύντομα διαθέσιμο! Το Premium πακέτο έρχεται σύντομα.')}
+                  className="w-full py-4 rounded-xl font-headline font-bold text-on-primary bg-gradient-to-br from-primary to-primary-container shadow-lg hover:opacity-90 transition-all active:scale-95">
+                  Ξεκλείδωσε το Δυναμικό μου →
+                </button>
+              </div>
+            </div>
+
+            {/* Science section */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center bg-surface-container-low rounded-xl p-8 border border-outline-variant/10">
+              <div className="md:col-span-7 space-y-4">
+                <h3 className="font-headline font-bold text-2xl text-on-surface tracking-tight">Η Επιστήμη της Επιλογής</h3>
+                <p className="font-body text-on-surface-variant leading-relaxed text-sm">
+                  Η πλατφόρμα χρησιμοποιεί προηγμένη σημασιολογική ανάλυση και γνωστική χαρτογράφηση για να κατανοήσει το μοναδικό σου επαγγελματικό αποτύπωμα. Το AI e-Pythia συνθέτει χιλιάδες δεδομένα καριέρας σε μία συνεκτική αφήγηση για το μέλλον σου.
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  {[{ val: '98%', label: 'Ακρίβεια Ανάλυσης' }, { val: '<2min', label: 'Χρόνος Αποτελέσματος' }].map(({ val, label }) => (
+                    <div key={label} className="p-4 rounded-xl bg-surface-container-high/50">
+                      <span className="font-headline font-extrabold text-2xl text-secondary block mb-1">{val}</span>
+                      <span className="font-label text-xs uppercase tracking-wider text-on-surface-variant">{label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="md:col-span-5">
+                <div className="w-full aspect-video rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center border border-outline-variant/10">
+                  <div className="text-center">
+                    <span className="material-symbols-outlined text-[64px] text-primary/40">psychology</span>
+                    <p className="text-xs text-on-surface-variant mt-2 font-label">AI Cognitive Mapping</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
