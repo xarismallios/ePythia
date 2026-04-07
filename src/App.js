@@ -918,7 +918,7 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
 
       {/* ── MAIN APP ── */}
       {true && (
-      <div>
+      <>
 
       {showLeadPopup && (
         <div className="fixed inset-0 flex items-end justify-center p-4 z-50 pointer-events-none">
@@ -1652,8 +1652,6 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
         <p className="mt-3"><a href="mailto:pythiacontact@gmail.com" className="text-secondary hover:text-secondary/80 transition-colors font-label font-semibold">pythiacontact@gmail.com</a></p>
       </div>
 
-      </div>
-
       {/* ── BOTTOM NAV ── */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-surface-container/90 backdrop-blur border-t border-outline-variant/20 flex items-center justify-around px-2 pb-safe">
         {[
@@ -1678,7 +1676,7 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
         })}
       </nav>
 
-      )} {/* end authUser */}
+      </> )} {/* end main app */}
 
       <style jsx>{`
         @keyframes fade-in { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
