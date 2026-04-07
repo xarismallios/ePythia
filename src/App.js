@@ -109,6 +109,8 @@ export default function EPythia() {
   const [authForm, setAuthForm] = useState({ email: '', password: '', firstName: '', lastName: '' });
   const [authError, setAuthError] = useState('');
   const [authSubmitting, setAuthSubmitting] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [testimonialIdx, setTestimonialIdx] = useState(0);
 
   const resultsRef = useRef(null);
 
@@ -128,6 +130,12 @@ export default function EPythia() {
     });
     return () => subscription.unsubscribe();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-advance testimonials
+  useEffect(() => {
+    const t = setInterval(() => setTestimonialIdx(i => (i + 1) % 3), 4000);
+    return () => clearInterval(t);
+  }, []);
 
   // ── Static data ────────────────────────────────────────────────
 
@@ -386,7 +394,8 @@ export default function EPythia() {
       email: authForm.email,
       password: authForm.password,
     });
-    if (error) setAuthError(error.message);
+    if (error) { setAuthError(error.message); }
+    else { setShowAuthModal(false); setStep('profile'); }
     setAuthSubmitting(false);
   };
 
@@ -771,6 +780,11 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
           </div>
           <div className="text-center sm:text-left">
             <p className="text-xs font-label font-semibold uppercase tracking-widest text-on-surface-variant mb-1">Το προφίλ σου</p>
+            {(contactInfo.firstName || (profile && profile.firstName)) && (
+              <p className="text-lg font-label font-semibold text-on-surface mb-1">
+                {contactInfo.firstName || profile.firstName}{contactInfo.lastName || (profile && profile.lastName) ? ` ${contactInfo.lastName || profile.lastName}` : ''}
+              </p>
+            )}
             <h3 className={`text-3xl font-extrabold mb-2 bg-gradient-to-r ${cfg.gradient} bg-clip-text text-transparent`}>{persona.name}</h3>
             <p className="text-on-surface-variant text-base leading-relaxed max-w-lg">{persona.tagline}</p>
           </div>
@@ -837,75 +851,75 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
         </div>
       )}
 
-      {/* ── AUTH PAGE ── (temporarily disabled) */}
-      {false && !authUser && !authLoading && (
-        <div className="min-h-screen flex items-center justify-center px-6 py-16">
-          <div className="w-full max-w-md animate-fade-in">
-            <div className="text-center mb-10">
-              <h1 className="text-5xl font-bold bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent mb-2">e-Pythia</h1>
-              <p className="text-slate-400">Ο 1ος AI Σύμβουλος Καριέρας στην Ελλάδα</p>
+      {/* ── AUTH MODAL ── */}
+      {showAuthModal && !authUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/40 backdrop-blur-sm" onClick={() => setShowAuthModal(false)}>
+          <div className="w-full max-w-md animate-fade-in bg-surface rounded-2xl shadow-2xl border border-outline-variant/20 p-8" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-headline font-bold text-primary">
+                {authMode === 'login' ? 'Σύνδεση' : 'Δημιουργία Λογαριασμού'}
+              </h2>
+              <button onClick={() => setShowAuthModal(false)} className="p-2 rounded-full hover:bg-surface-container-high transition text-on-surface-variant">✕</button>
             </div>
-            <div className="bg-gradient-to-br from-slate-800/60 to-slate-800/30 rounded-2xl p-8 border border-slate-700/50 backdrop-blur-sm shadow-2xl">
-              <div className="flex rounded-xl bg-slate-900/60 p-1 mb-8">
-                {[['login','Σύνδεση'],['signup','Εγγραφή']].map(([mode, label]) => (
-                  <button key={mode} onClick={() => { setAuthMode(mode); setAuthError(''); }}
-                    className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${authMode === mode ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <div className="space-y-4">
-                {authMode === 'signup' && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">Όνομα</label>
-                      <input type="text" value={authForm.firstName} onChange={e => handleAuthFormChange('firstName', e.target.value)}
-                        placeholder="Όνομα" autoComplete="given-name"
-                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900/50 border border-slate-700 hover:border-slate-600 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-slate-200 text-sm transition-all placeholder-slate-500" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1.5">Επώνυμο</label>
-                      <input type="text" value={authForm.lastName} onChange={e => handleAuthFormChange('lastName', e.target.value)}
-                        placeholder="Επώνυμο" autoComplete="family-name"
-                        className="w-full px-3 py-2.5 rounded-xl bg-slate-900/50 border border-slate-700 hover:border-slate-600 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-slate-200 text-sm transition-all placeholder-slate-500" />
-                    </div>
-                  </div>
-                )}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Email</label>
-                  <input type="email" value={authForm.email} onChange={e => handleAuthFormChange('email', e.target.value)}
-                    placeholder="email@example.com" autoComplete="email"
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-900/50 border border-slate-700 hover:border-slate-600 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-slate-200 text-sm transition-all placeholder-slate-500" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Κωδικός</label>
-                  <input type="password" value={authForm.password} onChange={e => handleAuthFormChange('password', e.target.value)}
-                    placeholder="Τουλάχιστον 6 χαρακτήρες"
-                    autoComplete={authMode === 'signup' ? 'new-password' : 'current-password'}
-                    onKeyDown={e => e.key === 'Enter' && (authMode === 'login' ? handleLogin() : handleSignUp())}
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-900/50 border border-slate-700 hover:border-slate-600 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-slate-200 text-sm transition-all placeholder-slate-500" />
-                </div>
-                {authError && authError !== 'confirm' && (
-                  <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-sm">{authError}</div>
-                )}
-                {authError === 'confirm' && (
-                  <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-sm">
-                    ✓ Σου στείλαμε email επιβεβαίωσης. Έλεγξε τα εισερχόμενα!
-                  </div>
-                )}
-                <button
-                  onClick={authMode === 'login' ? handleLogin : handleSignUp}
-                  disabled={authSubmitting || !authForm.email || !authForm.password || (authMode === 'signup' && (!authForm.firstName || !authForm.lastName))}
-                  className={`w-full py-3.5 rounded-xl font-bold text-white transition-all duration-300 mt-2 ${
-                    authSubmitting || !authForm.email || !authForm.password || (authMode === 'signup' && (!authForm.firstName || !authForm.lastName))
-                      ? 'bg-slate-700 cursor-not-allowed opacity-50'
-                      : 'bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 hover:opacity-90 hover:shadow-lg hover:shadow-violet-500/40'
-                  }`}>
-                  {authSubmitting ? 'Παρακαλώ περίμενε...' : authMode === 'login' ? 'Σύνδεση →' : 'Δημιουργία Λογαριασμού →'}
+            <div className="flex rounded-xl bg-surface-container p-1 mb-6">
+              {[['login','Σύνδεση'],['signup','Εγγραφή']].map(([mode, label]) => (
+                <button key={mode} onClick={() => { setAuthMode(mode); setAuthError(''); }}
+                  className={`flex-1 py-2.5 rounded-lg text-sm font-label font-semibold transition-all duration-200 ${authMode === mode ? 'bg-primary text-on-primary shadow' : 'text-on-surface-variant hover:text-on-surface'}`}>
+                  {label}
                 </button>
-              </div>
+              ))}
             </div>
-            <p className="text-center text-xs text-slate-600 mt-6">Τα δεδομένα σου προστατεύονται και δεν μοιράζονται σε τρίτους.</p>
+            <div className="space-y-4">
+              {authMode === 'signup' && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-label font-semibold text-on-surface-variant mb-1.5">Όνομα</label>
+                    <input type="text" value={authForm.firstName} onChange={e => handleAuthFormChange('firstName', e.target.value)}
+                      placeholder="Όνομα" autoComplete="given-name"
+                      className="w-full px-3 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant/30 hover:border-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-on-surface text-sm transition-all" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-label font-semibold text-on-surface-variant mb-1.5">Επώνυμο</label>
+                    <input type="text" value={authForm.lastName} onChange={e => handleAuthFormChange('lastName', e.target.value)}
+                      placeholder="Επώνυμο" autoComplete="family-name"
+                      className="w-full px-3 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant/30 hover:border-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-on-surface text-sm transition-all" />
+                  </div>
+                </div>
+              )}
+              <div>
+                <label className="block text-xs font-label font-semibold text-on-surface-variant mb-1.5">Email</label>
+                <input type="email" value={authForm.email} onChange={e => handleAuthFormChange('email', e.target.value)}
+                  placeholder="email@example.com" autoComplete="email"
+                  className="w-full px-3 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant/30 hover:border-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-on-surface text-sm transition-all" />
+              </div>
+              <div>
+                <label className="block text-xs font-label font-semibold text-on-surface-variant mb-1.5">Κωδικός</label>
+                <input type="password" value={authForm.password} onChange={e => handleAuthFormChange('password', e.target.value)}
+                  placeholder="Τουλάχιστον 6 χαρακτήρες"
+                  autoComplete={authMode === 'signup' ? 'new-password' : 'current-password'}
+                  onKeyDown={e => e.key === 'Enter' && (authMode === 'login' ? handleLogin() : handleSignUp())}
+                  className="w-full px-3 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant/30 hover:border-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-on-surface text-sm transition-all" />
+              </div>
+              {authError && authError !== 'confirm' && (
+                <div className="p-3 rounded-xl bg-error/10 border border-error/20 text-error text-sm">{authError}</div>
+              )}
+              {authError === 'confirm' && (
+                <div className="p-3 rounded-xl bg-secondary-container/30 border border-secondary/20 text-secondary text-sm">
+                  ✓ Σου στείλαμε email επιβεβαίωσης. Έλεγξε τα εισερχόμενα!
+                </div>
+              )}
+              <button
+                onClick={authMode === 'login' ? handleLogin : handleSignUp}
+                disabled={authSubmitting || !authForm.email || !authForm.password || (authMode === 'signup' && (!authForm.firstName || !authForm.lastName))}
+                className={`w-full py-3.5 rounded-xl font-label font-bold transition-all duration-300 mt-2 ${
+                  authSubmitting || !authForm.email || !authForm.password || (authMode === 'signup' && (!authForm.firstName || !authForm.lastName))
+                    ? 'bg-surface-container text-outline cursor-not-allowed opacity-50'
+                    : 'bg-primary text-on-primary hover:opacity-90 shadow-md'
+                }`}>
+                {authSubmitting ? 'Παρακαλώ περίμενε...' : authMode === 'login' ? 'Σύνδεση →' : 'Δημιουργία Λογαριασμού →'}
+              </button>
+            </div>
+            <p className="text-center text-xs text-on-surface-variant mt-5">Τα δεδομένα σου προστατεύονται και δεν μοιράζονται σε τρίτους.</p>
           </div>
         </div>
       )}
@@ -996,12 +1010,25 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
               <span className="hidden sm:inline">Αρχή</span>
             </button>
           )}
-          <button onClick={handleSignOut}
-            className="p-2 rounded-full hover:bg-surface-container-high transition duration-200 text-on-surface-variant hover:text-error">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-          </button>
+          {authUser ? (
+            <button onClick={handleSignOut}
+              className="p-2 rounded-full hover:bg-surface-container-high transition duration-200 text-on-surface-variant hover:text-error" title="Έξοδος">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </button>
+          ) : (
+            <>
+              <button onClick={() => { setAuthMode('login'); setAuthError(''); setShowAuthModal(true); }}
+                className="px-4 py-2 rounded-full text-sm font-label font-semibold text-primary border border-primary/30 hover:bg-primary/10 transition duration-200">
+                Σύνδεση
+              </button>
+              <button onClick={() => { setAuthMode('signup'); setAuthError(''); setShowAuthModal(true); }}
+                className="px-4 py-2 rounded-full text-sm font-label font-semibold bg-primary text-on-primary hover:opacity-90 transition duration-200 shadow-sm">
+                Εγγραφή
+              </button>
+            </>
+          )}
         </div>
       </header>
 
@@ -1011,67 +1038,39 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
         {step === 'welcome' && (
           <div className="animate-fade-in space-y-8">
             {/* Hero */}
-            <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end pt-4">
-              <div className="lg:col-span-7">
-                <p className="text-secondary font-label font-medium mb-3 flex items-center gap-2 text-sm">
-                  <span className="w-2 h-2 rounded-full bg-secondary inline-block"></span>
-                  AI Σύμβουλος Καριέρας — Ελλάδα
-                </p>
-                <h1 className="font-headline font-bold text-primary text-[2.5rem] md:text-[2.75rem] leading-[1.1] tracking-tight mb-6">
-                  Καλωσόρισες.<br />
-                  Η πορεία σου <span className="text-secondary">ξεκινά εδώ.</span>
-                </h1>
-                <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/20 shadow-sm p-2 flex items-center gap-3 mb-4 max-w-xl">
-                  <MessageCircle className="w-5 h-5 text-outline ml-2 flex-shrink-0" />
+            <section className="max-w-2xl mx-auto pt-8 text-center">
+              <p className="text-secondary font-label font-medium mb-3 flex items-center justify-center gap-2 text-sm">
+                <span className="w-2 h-2 rounded-full bg-secondary inline-block"></span>
+                AI Σύμβουλος Καριέρας — Ελλάδα
+              </p>
+              <h1 className="font-headline font-bold text-primary text-[2.5rem] md:text-[3rem] leading-[1.1] tracking-tight mb-8">
+                Καλωσόρισες.<br />
+                Η πορεία σου <span className="text-secondary">ξεκινά εδώ.</span>
+              </h1>
+              <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant/20 shadow-sm p-4 mb-5">
+                <div className="flex items-center gap-3">
+                  <MessageCircle className="w-6 h-6 text-outline ml-1 flex-shrink-0" />
                   <input
                     type="text"
                     value={chatInput}
                     onChange={e => setChatInput(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleChatSubmit()}
                     placeholder="Πες μου λίγα λόγια για σένα..."
-                    className="flex-1 outline-none text-on-surface text-sm placeholder-outline bg-transparent py-2 font-body"
+                    className="flex-1 outline-none text-on-surface text-base placeholder-outline bg-transparent py-3 font-body"
                   />
                   <button
                     onClick={handleChatSubmit}
                     disabled={!chatInput.trim()}
-                    className={`flex-shrink-0 px-5 py-2 rounded-lg font-label font-semibold text-sm transition-all duration-200 ${chatInput.trim() ? 'bg-primary text-on-primary hover:opacity-90 shadow-sm' : 'bg-surface-container text-outline cursor-not-allowed'}`}
+                    className={`flex-shrink-0 px-6 py-3 rounded-xl font-label font-semibold text-base transition-all duration-200 ${chatInput.trim() ? 'bg-primary text-on-primary hover:opacity-90 shadow-sm' : 'bg-surface-container text-outline cursor-not-allowed'}`}
                   >
                     Εκκίνηση →
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-3">
-                  <button onClick={() => handleUserTypeSelect('highschool')}
-                    className="bg-primary text-on-primary px-6 py-3 rounded-xl font-headline font-bold text-base flex items-center gap-2 transition-all active:scale-95 shadow-md hover:opacity-90">
-                    <GraduationCap className="w-5 h-5" />Ξεκίνα Ανάλυση
-                  </button>
-                  <button className="bg-surface-container-high/60 text-on-surface px-6 py-3 rounded-xl font-headline font-bold text-base hover:bg-surface-container-high transition-all">
-                    Μάθε Περισσότερα
-                  </button>
-                </div>
               </div>
-              <div className="lg:col-span-5">
-                <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-label font-semibold text-on-surface-variant uppercase tracking-widest">Γρήγορη Εκκίνηση</span>
-                    <span className="text-secondary font-bold text-sm">6 κατηγορίες</span>
-                  </div>
-                  <div className="space-y-2">
-                    {journeyCards.slice(0, 3).map((card) => {
-                      const Icon = card.icon;
-                      return (
-                        <button key={card.id} onClick={card.action}
-                          className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all duration-200 group">
-                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
-                            <Icon className="w-4 h-4 text-primary" />
-                          </div>
-                          <span className="text-sm font-label font-medium text-on-surface leading-snug">{card.prompt}</span>
-                          <ChevronRight className="w-4 h-4 text-outline ml-auto flex-shrink-0 group-hover:text-primary transition-colors" />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
+              <button onClick={() => setStep('about')}
+                className="text-sm font-label font-semibold text-on-surface-variant hover:text-primary underline underline-offset-4 transition-colors">
+                Μάθε Περισσότερα
+              </button>
             </section>
 
             {/* Bento Grid */}
@@ -1121,32 +1120,45 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
               </div>
 
               {/* Bottom row */}
-              <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Testimonials */}
+              <div className="lg:col-span-3 grid grid-cols-1 gap-6">
+                {/* Testimonials Carousel */}
                 <div className="bg-surface-container-low p-8 rounded-xl">
                   <h2 className="font-headline font-bold text-xl text-primary mb-6">Τι λένε οι χρήστες</h2>
-                  <div className="space-y-5">
-                    {testimonials.map((t, idx) => (
-                      <div key={idx} className="flex items-start gap-3">
-                        <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${t.gradient} flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5`}>{t.name.charAt(0)}</div>
-                        <div>
-                          <p className="text-sm text-on-surface leading-relaxed italic">"{t.text}"</p>
-                          <p className="text-xs text-on-surface-variant mt-1 font-label font-medium">{t.name} · {t.role}</p>
+                  <div className="relative min-h-[120px]">
+                    {(() => {
+                      const t = testimonials[testimonialIdx];
+                      return (
+                        <div className="flex items-start gap-4 animate-fade-in" key={testimonialIdx}>
+                          <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${t.gradient} flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-0.5`}>{t.name.charAt(0)}</div>
+                          <div>
+                            <p className="text-base text-on-surface leading-relaxed italic">"{t.text}"</p>
+                            <p className="text-sm text-on-surface-variant mt-2 font-label font-medium">{t.name} · {t.role}</p>
+                          </div>
                         </div>
-                      </div>
+                      );
+                    })()}
+                  </div>
+                  <div className="flex items-center justify-center gap-3 mt-6">
+                    <button onClick={() => setTestimonialIdx(i => (i - 1 + testimonials.length) % testimonials.length)}
+                      className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition">‹</button>
+                    {testimonials.map((_, i) => (
+                      <button key={i} onClick={() => setTestimonialIdx(i)}
+                        className={`w-2 h-2 rounded-full transition-all ${i === testimonialIdx ? 'bg-primary w-4' : 'bg-outline-variant'}`} />
                     ))}
+                    <button onClick={() => setTestimonialIdx(i => (i + 1) % testimonials.length)}
+                      className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition">›</button>
                   </div>
                 </div>
 
                 {/* Coach CTA */}
-                <div className="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/10 shadow-sm flex flex-col justify-between">
-                  <div>
-                    <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center mb-5 shadow-md">
+                <div className="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/10 shadow-sm flex flex-col sm:flex-row items-center gap-8">
+                  <div className="flex-1">
+                    <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center mb-4 shadow-md">
                       <Calendar className="w-6 h-6 text-on-primary" />
                     </div>
                     <h3 className="font-headline font-bold text-xl text-primary mb-2">Θέλεις προσωπικό coaching;</h3>
                     <p className="text-sm text-on-surface-variant leading-relaxed mb-4">Συνδέσου με εξειδικευμένο σύμβουλο καριέρας που έχει ζήσει το ίδιο path.</p>
-                    <div className="space-y-2 mb-6">
+                    <div className="space-y-2">
                       {['Πραγματική εμπειρία στον κλάδο σου','Πρακτικές και εφαρμόσιμες συμβουλές','Η 1η συνεδρία είναι ΔΩΡΕΑΝ'].map(item => (
                         <div key={item} className="flex items-center gap-2">
                           <div className="w-4 h-4 rounded-full bg-secondary-container flex items-center justify-center flex-shrink-0">
@@ -1158,12 +1170,62 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
                     </div>
                   </div>
                   <a href="https://calendly.com/pythiacontact/1-coaching-pythia-ai" target="_blank" rel="noopener noreferrer"
-                    className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-on-primary font-label font-semibold text-sm transition-all hover:opacity-90 shadow-md">
-                    <Calendar className="w-4 h-4" />Κλείσε Δωρεάν Συνεδρία
+                    className="flex-shrink-0 flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-primary text-on-primary font-label font-semibold text-base transition-all hover:opacity-90 shadow-md whitespace-nowrap">
+                    <Calendar className="w-5 h-5" />Κλείσε Δωρεάν Συνεδρία
                   </a>
                 </div>
               </div>
             </section>
+          </div>
+        )}
+
+        {/* ── ABOUT ── */}
+        {step === 'about' && (
+          <div className="max-w-3xl mx-auto py-10 animate-fade-in space-y-8">
+            <button onClick={() => setStep('welcome')} className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-primary font-label font-semibold transition-colors">
+              <ArrowLeft className="w-4 h-4" />Πίσω στην Αρχική
+            </button>
+            <div className="text-center">
+              <h1 className="text-4xl font-headline font-bold text-primary mb-3">Τι είναι το e-Pythia;</h1>
+              <p className="text-on-surface-variant text-lg leading-relaxed">Ο πρώτος AI Σύμβουλος Καριέρας στην Ελλάδα, σχεδιασμένος για μαθητές, φοιτητές και επαγγελματίες που θέλουν να ανακαλύψουν ή να αλλάξουν κατεύθυνση.</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              {[
+                { icon: GraduationCap, title: 'Για Μαθητές', desc: 'Βρες ποια σχολή ταιριάζει στα ενδιαφέροντά σου και τον τρόπο σκέψης σου.', gradient: 'from-cyan-500 to-blue-500' },
+                { icon: Compass, title: 'Για Φοιτητές', desc: 'Χάρτης επαγγελματικών επιλογών βασισμένος στο πτυχίο και τις αξίες σου.', gradient: 'from-violet-500 to-purple-500' },
+                { icon: Briefcase, title: 'Για Επαγγελματίες', desc: 'Δομημένο σχέδιο για αλλαγή καριέρας ή εξέλιξη στον κλάδο σου.', gradient: 'from-fuchsia-500 to-pink-500' },
+              ].map(({ icon: Icon, title, desc, gradient }) => (
+                <div key={title} className="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10 shadow-sm text-center">
+                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center mx-auto mb-4 shadow-md`}>
+                    <Icon className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="font-headline font-bold text-primary mb-2">{title}</h3>
+                  <p className="text-sm text-on-surface-variant leading-relaxed">{desc}</p>
+                </div>
+              ))}
+            </div>
+            <div className="bg-surface-container-low rounded-xl p-8 space-y-4">
+              <h2 className="font-headline font-bold text-xl text-primary">Πώς λειτουργεί;</h2>
+              {[
+                { step: '1', title: 'Διάλεξε κατηγορία', desc: 'Μαθητής, Φοιτητής, Υπάλληλος, Απόφοιτος, Ελεύθερος Επαγγελματίας ή Αλλαγή Κατεύθυνσης.' },
+                { step: '2', title: 'Απάντησε στις ερωτήσεις', desc: 'Εξατομικευμένες ερωτήσεις που αποκαλύπτουν τα ενδιαφέροντα, τις αξίες και τις δεξιότητές σου.' },
+                { step: '3', title: 'Λάβε το Χάρτη Καριέρας σου', desc: 'Αναλυτικές οδηγίες, σχέδιο δράσης και επαγγελματικό coaching αν το χρειαστείς.' },
+              ].map(({ step: s, title, desc }) => (
+                <div key={s} className="flex gap-4 items-start">
+                  <div className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-sm flex-shrink-0">{s}</div>
+                  <div>
+                    <p className="font-label font-semibold text-on-surface">{title}</p>
+                    <p className="text-sm text-on-surface-variant mt-0.5">{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="text-center">
+              <button onClick={() => setStep('welcome')}
+                className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-primary text-on-primary font-label font-bold text-base hover:opacity-90 transition shadow-md">
+                <Sparkles className="w-5 h-5" />Ξεκίνα τώρα
+              </button>
+            </div>
           </div>
         )}
 
@@ -1342,8 +1404,8 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
                   </div>
                 </div>
 
-                {/* Action Plan */}
-                <ActionPlan />
+                {/* Action Plan — only visible after profile is created */}
+                {(profileSaved || !!authUser) && <ActionPlan />}
 
                 {/* Profile CTA */}
                 {!profileSaved && (
@@ -1650,7 +1712,6 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-surface-container/90 backdrop-blur border-t border-outline-variant/20 flex items-center justify-around px-2 pb-safe">
         {[
           { id: 'welcome', icon: 'home', label: 'Αρχική' },
-          { id: 'results', icon: 'explore', label: 'Αποτελέσματα' },
           { id: 'profile', icon: 'person', label: 'Προφίλ' },
         ].map(({ id, icon, label }) => {
           const active = step === id;
