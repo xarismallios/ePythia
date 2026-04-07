@@ -857,7 +857,7 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
   // ── Render ─────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-surface font-body text-on-surface pb-20">
+    <div className="min-h-screen bg-surface font-body text-on-surface">
 
       {/* Auth loading */}
       {authLoading && (
@@ -1850,28 +1850,6 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
         <p className="mt-3"><a href="mailto:pythiacontact@gmail.com" className="text-secondary hover:text-secondary/80 transition-colors font-label font-semibold">pythiacontact@gmail.com</a></p>
       </div>
 
-      {/* ── BOTTOM NAV ── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-surface-container/90 backdrop-blur border-t border-outline-variant/20 flex items-center justify-around px-2 pb-safe">
-        {[
-          { id: 'welcome', icon: 'home', label: 'Αρχική' },
-          { id: 'profile', icon: 'person', label: 'Προφίλ' },
-        ].map(({ id, icon, label }) => {
-          const active = step === id;
-          return (
-            <button key={id} onClick={() => setStep(id)}
-              className={`flex flex-col items-center gap-0.5 py-3 px-5 rounded-2xl transition-all duration-200 ${
-                active ? 'text-primary' : 'text-on-surface-variant hover:text-on-surface'
-              }`}>
-              <span className={`material-symbols-outlined text-[24px] transition-all ${active ? 'font-variation-settings-fill' : ''}`}
-                style={active ? { fontVariationSettings: "'FILL' 1" } : {}}>
-                {icon}
-              </span>
-              <span className={`text-[10px] font-label font-medium leading-none ${active ? 'font-semibold' : ''}`}>{label}</span>
-              {active && <span className="w-1 h-1 rounded-full bg-primary mt-0.5" />}
-            </button>
-          );
-        })}
-      </nav>
 
       </> )} {/* end main app */}
 
