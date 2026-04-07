@@ -45,6 +45,16 @@ const getLevel = (xp) => {
 };
 
 
+// ── Trait defaults per persona type (fallback when AI doesn't return traits) ──
+const TRAIT_DEFAULTS = {
+  innovator: { creativity: 9, leadership: 6, analysis: 7, communication: 7, execution: 6 },
+  builder:   { creativity: 7, leadership: 6, analysis: 6, communication: 5, execution: 9 },
+  analyst:   { creativity: 6, leadership: 5, analysis: 9, communication: 6, execution: 8 },
+  leader:    { creativity: 6, leadership: 9, analysis: 7, communication: 8, execution: 8 },
+  explorer:  { creativity: 8, leadership: 6, analysis: 7, communication: 7, execution: 6 },
+  caregiver: { creativity: 6, leadership: 6, analysis: 6, communication: 9, execution: 7 },
+};
+
 // ── Persona config ──────────────────────────────────────────────
 const personaConfig = {
   innovator: { icon: Lightbulb, gradient: 'from-cyan-500 to-blue-500', bg: 'from-cyan-500/15 to-blue-500/10', border: 'border-cyan-500/30', ring: 'ring-cyan-500/40' },
@@ -71,6 +81,12 @@ const parseAIResponse = (text) => {
   if (actionsMatch) {
     try { actionSteps = JSON.parse(actionsMatch[1].trim()).steps || []; } catch {}
     recommendations = recommendations.replace(/---ACTIONS_START---[\s\S]*?---ACTIONS_END---/, '').trim();
+  }
+
+  const traitsMatch = text.match(/---TRAITS_START---([\s\S]*?)---TRAITS_END---/);
+  if (traitsMatch && persona) {
+    try { persona.traits = JSON.parse(traitsMatch[1].trim()); } catch {}
+    recommendations = recommendations.replace(/---TRAITS_START---[\s\S]*?---TRAITS_END---/, '').trim();
   }
 
   return { recommendations, persona, actionSteps };
@@ -112,6 +128,7 @@ export default function EPythia() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [testimonialIdx, setTestimonialIdx] = useState(0);
   const [chatLoading, setChatLoading] = useState(false);
+  const [profileCheckedSteps, setProfileCheckedSteps] = useState({});
 
   const resultsRef = useRef(null);
 
@@ -137,6 +154,14 @@ export default function EPythia() {
     const t = setInterval(() => setTestimonialIdx(i => (i + 1) % 3), 4000);
     return () => clearInterval(t);
   }, []);
+
+  // Sync profileCheckedSteps from latest session
+  useEffect(() => {
+    if (profile && profile.sessions.length > 0) {
+      const latest = profile.sessions[profile.sessions.length - 1];
+      setProfileCheckedSteps(latest.checkedSteps || {});
+    }
+  }, [profile]);
 
   // ── Static data ────────────────────────────────────────────────
 
@@ -506,6 +531,31 @@ export default function EPythia() {
     }
   };
 
+  const toggleProfileStep = async (sessionId, idx, sessionSteps) => {
+    const next = { ...profileCheckedSteps, [idx]: !profileCheckedSteps[idx] };
+    setProfileCheckedSteps(next);
+    if (!authUser) return;
+    await supabase.from('career_sessions').update({ checked_steps: next }).eq('id', sessionId);
+    const isNowChecked = !profileCheckedSteps[idx];
+    if (isNowChecked) {
+      let gained = idx < 2 ? 15 : idx < 4 ? 20 : 25;
+      const { data: prof } = await supabase.from('profiles').select('total_xp, badges').eq('id', authUser.id).single();
+      const existingBadges = [...(prof?.badges || [])];
+      const earned = [];
+      if (!existingBadges.includes('action_taker')) { existingBadges.push('action_taker'); earned.push('action_taker'); }
+      const allDone = sessionSteps.every((_, i) => next[i]);
+      if (allDone) {
+        gained += 50;
+        if (!existingBadges.includes('plan_complete')) { existingBadges.push('plan_complete'); earned.push('plan_complete'); }
+      }
+      const newXP = (prof?.total_xp || 0) + gained;
+      await supabase.from('profiles').update({ total_xp: newXP, badges: existingBadges }).eq('id', authUser.id);
+      await fetchProfile(authUser);
+      setXpToast({ xp: gained, newBadges: earned });
+      setTimeout(() => setXpToast(null), 3000);
+    }
+  };
+
   const retakeQuestionnaire = () => {
     setFormData({});
     setCurrentQuestionIndex(0);
@@ -741,8 +791,13 @@ Markdown με sections:
 {"steps":["[ACTION_1_GREEK]","[ACTION_2]","[ACTION_3]","[ACTION_4]","[ACTION_5]"]}
 ---ACTIONS_END---
 
+---TRAITS_START---
+{"creativity":[1-10],"leadership":[1-10],"analysis":[1-10],"communication":[1-10],"execution":[1-10]}
+---TRAITS_END---
+
 Personas: innovator="Ο Καινοτόμος", builder="Ο Δημιουργός", analyst="Ο Αναλυτής", leader="Ο Ηγέτης", explorer="Ο Εξερευνητής", caregiver="Ο Φροντιστής".
-Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δράσης.`;
+Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δράσης.
+Traits: αξιολόγησε βάσει των απαντήσεων του χρήστη, integers 1-10.`;
     return p.trim();
   };
 
@@ -787,6 +842,60 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
 
   // ── Sub-components ─────────────────────────────────────────────
 
+  const RadarChart = ({ traits }) => {
+    const labels = { creativity: 'Δημιουργικότητα', leadership: 'Ηγεσία', analysis: 'Ανάλυση', communication: 'Επικοινωνία', execution: 'Υλοποίηση' };
+    const keys = Object.keys(labels);
+    const N = keys.length;
+    const cx = 150, cy = 150, r = 100;
+    const angle = (i) => (2 * Math.PI * i / N) - Math.PI / 2;
+    const pt = (i, score) => {
+      const d = (score / 10) * r;
+      return [cx + d * Math.cos(angle(i)), cy + d * Math.sin(angle(i))];
+    };
+    const outerPt = (i) => [cx + r * Math.cos(angle(i)), cy + r * Math.sin(angle(i))];
+    const gridLevels = [0.25, 0.5, 0.75, 1];
+    const dataPoints = keys.map((k, i) => pt(i, traits[k] || 5));
+    const dataPath = dataPoints.map(([x, y]) => `${x},${y}`).join(' ');
+    return (
+      <svg viewBox="0 0 300 300" className="w-full max-w-xs mx-auto">
+        {/* Grid rings */}
+        {gridLevels.map(lvl => (
+          <polygon key={lvl}
+            points={keys.map((_, i) => { const [x,y] = [cx + r*lvl*Math.cos(angle(i)), cy + r*lvl*Math.sin(angle(i))]; return `${x},${y}`; }).join(' ')}
+            fill="none" stroke="#c6c5d4" strokeWidth="1" />
+        ))}
+        {/* Axis lines */}
+        {keys.map((_, i) => {
+          const [ox, oy] = outerPt(i);
+          return <line key={i} x1={cx} y1={cy} x2={ox} y2={oy} stroke="#c6c5d4" strokeWidth="1" />;
+        })}
+        {/* Data polygon */}
+        <polygon points={dataPath} fill="rgba(19,25,126,0.15)" stroke="#13197e" strokeWidth="2" strokeLinejoin="round" />
+        {/* Data dots */}
+        {dataPoints.map(([x, y], i) => (
+          <circle key={i} cx={x} cy={y} r="4" fill="#13197e" />
+        ))}
+        {/* Labels */}
+        {keys.map((k, i) => {
+          const [lx, ly] = [cx + (r + 20) * Math.cos(angle(i)), cy + (r + 20) * Math.sin(angle(i))];
+          const anchor = lx < cx - 5 ? 'end' : lx > cx + 5 ? 'start' : 'middle';
+          return (
+            <text key={k} x={lx} y={ly} textAnchor={anchor} dominantBaseline="middle"
+              className="text-[10px]" style={{ fontSize: 10, fill: '#464652', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>
+              {labels[k]}
+            </text>
+          );
+        })}
+        {/* Score labels */}
+        {dataPoints.map(([x, y], i) => (
+          <text key={i} x={x} y={y - 8} textAnchor="middle" style={{ fontSize: 9, fill: '#13197e', fontWeight: 700 }}>
+            {traits[keys[i]] || 5}
+          </text>
+        ))}
+      </svg>
+    );
+  };
+
   const PersonaBadge = () => {
     if (!persona) return null;
     const cfg = personaConfig[persona.type] || personaConfig.explorer;
@@ -799,11 +908,12 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
           </div>
           <div className="text-center sm:text-left">
             <p className="text-xs font-label font-semibold uppercase tracking-widest text-on-surface-variant mb-1">Το προφίλ σου</p>
-            {(contactInfo.firstName || (profile && profile.firstName)) && (
-              <p className="text-lg font-label font-semibold text-on-surface mb-1">
-                {contactInfo.firstName || profile.firstName}{contactInfo.lastName || (profile && profile.lastName) ? ` ${contactInfo.lastName || profile.lastName}` : ''}
-              </p>
-            )}
+            {(() => {
+              const fn = contactInfo.firstName || (profile && profile.firstName) || '';
+              const ln = contactInfo.lastName || (profile && profile.lastName) || '';
+              const fullName = [fn, ln].filter(Boolean).join(' ');
+              return fullName ? <p className="text-lg font-label font-semibold text-on-surface mb-1">{fullName}</p> : null;
+            })()}
             <h3 className={`text-3xl font-extrabold mb-2 bg-gradient-to-r ${cfg.gradient} bg-clip-text text-transparent`}>{persona.name}</h3>
             <p className="text-on-surface-variant text-base leading-relaxed max-w-lg">{persona.tagline}</p>
           </div>
@@ -1624,189 +1734,244 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
       </div>
 
       {/* ── PROFILE ── */}
-      {step === 'profile' && profile && (
-        <div className="max-w-7xl mx-auto px-6 py-16">
-        <div className="max-w-4xl mx-auto animate-fade-in space-y-6">
-          {/* Level Header Card */}
-          {(() => {
-            const levelInfo = getLevel(profile.totalXP);
-            const pct = levelInfo.nextXP
-              ? Math.round(((profile.totalXP - levelInfo.min) / (levelInfo.nextXP - levelInfo.min)) * 100)
-              : 100;
-            return (
-              <div className="bg-surface-container-lowest rounded-xl p-8 border border-outline-variant/10 shadow-sm">
-                <div className="flex items-center gap-5 mb-6">
-                  <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center text-2xl font-bold text-on-primary shadow-lg flex-shrink-0">
-                    {profile.firstName.charAt(0)}
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-headline font-bold text-on-surface">Γεια σου, {profile.firstName}!</h2>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-sm font-label font-bold text-primary bg-primary/10 px-3 py-0.5 rounded-full border border-primary/20">
-                        Lv.{levelInfo.level} — {levelInfo.name}
-                      </span>
-                      <span className="text-sm text-on-surface-variant">{profile.totalXP} XP</span>
-                    </div>
-                  </div>
+      {step === 'profile' && profile && (() => {
+        const levelInfo = getLevel(profile.totalXP);
+        const lvlPct = levelInfo.nextXP
+          ? Math.round(((profile.totalXP - levelInfo.min) / (levelInfo.nextXP - levelInfo.min)) * 100)
+          : 100;
+        const latest = profile.sessions.length > 0 ? profile.sessions[profile.sessions.length - 1] : null;
+        const latestPersona = latest?.persona;
+        const pCfg = latestPersona ? personaConfig[latestPersona.type] || personaConfig.explorer : null;
+        const PIcon = pCfg?.icon;
+        const traits = latestPersona?.traits || (latestPersona ? TRAIT_DEFAULTS[latestPersona.type] || TRAIT_DEFAULTS.explorer : null);
+        const questSteps = latest?.actionSteps || [];
+        const questDone = Object.values(profileCheckedSteps).filter(Boolean).length;
+        const questPct = questSteps.length ? Math.round((questDone / questSteps.length) * 100) : 0;
+        const xpRewards = [15, 15, 20, 20, 25];
+        const typeLabels = { highschool: 'Μαθητής', university: 'Φοιτητής', employee: 'Επαγγελματίας' };
+        return (
+          <div className="max-w-4xl mx-auto px-6 py-10 animate-fade-in space-y-6">
+
+            {/* ── LEVEL CARD ── */}
+            <div className={`rounded-2xl p-8 border shadow-sm overflow-hidden relative ${pCfg ? `bg-gradient-to-br ${pCfg.bg} border-${pCfg.border}` : 'bg-surface-container-lowest border-outline-variant/10'}`}>
+              <div className="flex items-center gap-5 mb-6">
+                <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${pCfg ? pCfg.gradient : 'from-primary to-primary-container'} flex items-center justify-center text-3xl font-bold text-white shadow-lg ring-4 ring-white/30 flex-shrink-0 ${levelInfo.level === 4 ? 'animate-pulse' : ''}`}>
+                  {profile.firstName.charAt(0)}
                 </div>
-                {levelInfo.nextXP && (
-                  <div>
-                    <div className="flex justify-between text-xs text-on-surface-variant mb-2">
-                      <span>{profile.totalXP} XP</span>
-                      <span>{levelInfo.nextXP - profile.totalXP} XP μέχρι Level {levelInfo.level + 1}</span>
-                    </div>
-                    <div className="w-full h-3 bg-surface-container-high rounded-full overflow-hidden">
-                      <div className="h-full bg-primary rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                )}
-                {!levelInfo.nextXP && (
-                  <div className="mt-2 p-3 rounded-xl bg-secondary-container/30 border border-secondary/20 text-center">
-                    <p className="text-secondary font-label font-bold">🏆 Έχεις φτάσει στο μέγιστο level!</p>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-
-          {/* Stats row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {[
-              { val: profile.sessions.length, label: 'Αναλύσεις', color: 'text-primary' },
-              { val: profile.totalXP, label: 'Συνολικά XP', color: 'text-secondary' },
-              { val: profile.badges.length, label: 'Badges', color: 'text-tertiary' },
-              { val: profile.sessions.reduce((acc, s) => acc + Object.values(s.checkedSteps || {}).filter(Boolean).length, 0), label: 'Βήματα ✅', color: 'text-secondary' },
-            ].map(({ val, label, color }) => (
-              <div key={label} className="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant/10 shadow-sm text-center">
-                <div className={`text-3xl font-extrabold ${color}`}>{val}</div>
-                <div className="text-xs text-on-surface-variant mt-1">{label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Latest Persona */}
-          {profile.sessions.length > 0 && profile.sessions[profile.sessions.length - 1].persona && (() => {
-            const p = profile.sessions[profile.sessions.length - 1].persona;
-            const cfg = personaConfig[p.type] || personaConfig.explorer;
-            const Icon = cfg.icon;
-            return (
-              <div className={`bg-gradient-to-br ${cfg.bg} rounded-2xl p-6 border ${cfg.border} backdrop-blur-sm`}>
-                <p className="text-xs font-label font-semibold uppercase tracking-widest text-on-surface-variant mb-3">Τελευταίο Προφίλ</p>
-                <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${cfg.gradient} flex items-center justify-center shadow-lg flex-shrink-0`}>
-                    <Icon className="w-7 h-7 text-white" />
-                  </div>
-                  <div>
-                    <h3 className={`text-xl font-extrabold bg-gradient-to-r ${cfg.gradient} bg-clip-text text-transparent`}>{p.name}</h3>
-                    <p className="text-on-surface-variant text-sm">{p.tagline}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-label font-semibold uppercase tracking-widest text-on-surface-variant mb-1">Το dashboard σου</p>
+                  <h2 className="text-2xl font-headline font-bold text-on-surface">Γεια σου, {profile.firstName}!</h2>
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <span className="text-sm font-label font-bold text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
+                      ⚡ Lv.{levelInfo.level} — {levelInfo.name}
+                    </span>
+                    <span className="text-sm font-label font-semibold text-on-surface-variant">{profile.totalXP} XP</span>
                   </div>
                 </div>
               </div>
-            );
-          })()}
-
-          {/* Badges */}
-          <div className="bg-surface-container-lowest rounded-xl p-8 border border-outline-variant/10 shadow-sm">
-            <h3 className="text-xl font-headline font-bold text-on-surface mb-6">Badges ({profile.badges.length}/{BADGE_ORDER.length})</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {BADGE_ORDER.map(badgeId => {
-                const badge = BADGES[badgeId];
-                const earned = profile.badges.includes(badgeId);
-                return (
-                  <div key={badgeId} className={`p-4 rounded-xl border text-center transition-all ${
-                    earned ? 'bg-primary/10 border-primary/20' : 'bg-surface-container border-outline-variant/20 opacity-40'
-                  }`}>
-                    <div className="text-3xl mb-2">{badge.emoji}</div>
-                    <p className={`text-sm font-label font-bold ${earned ? 'text-on-surface' : 'text-on-surface-variant'}`}>{badge.name}</p>
-                    <p className="text-xs text-on-surface-variant mt-1">{badge.desc}</p>
-                    {!earned && <p className="text-xs text-on-surface-variant mt-2">🔒 Κλειδωμένο</p>}
+              {levelInfo.nextXP ? (
+                <div>
+                  <div className="flex justify-between text-xs text-on-surface-variant mb-2">
+                    <span>{profile.totalXP} XP</span>
+                    <span>+{levelInfo.nextXP - profile.totalXP} XP → Level {levelInfo.level + 1} ({levelInfo.nextXP} XP)</span>
                   </div>
-                );
-              })}
+                  <div className="flex gap-1">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className={`h-3 flex-1 rounded-full transition-all duration-700 ${i * 20 < lvlPct ? 'bg-primary' : 'bg-surface-container-high'}`} />
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-secondary-container/30 border border-secondary/20 text-center">
+                  <p className="text-secondary font-label font-bold">🏆 Έχεις φτάσει στο μέγιστο level!</p>
+                </div>
+              )}
             </div>
-          </div>
 
-          {/* Action plan from latest session */}
-          {(() => {
-            const latest = profile.sessions[profile.sessions.length - 1];
-            if (!latest?.actionSteps?.length) return null;
-            const checked = latest.checkedSteps || {};
-            const done = Object.values(checked).filter(Boolean).length;
-            const pct = Math.round((done / latest.actionSteps.length) * 100);
-            return (
-              <div className="bg-surface-container-lowest rounded-xl p-8 border border-outline-variant/10 shadow-sm">
-                <div className="flex justify-between items-center mb-4">
-                  <div>
-                    <h3 className="text-xl font-headline font-bold text-on-surface">Σχέδιο Δράσης</h3>
-                    <p className="text-on-surface-variant text-sm mt-0.5">Τελευταία ανάλυση</p>
+            {/* ── STATS ── */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {[
+                { val: profile.sessions.length, label: 'Αναλύσεις', color: 'text-primary', icon: '🔍' },
+                { val: profile.totalXP, label: 'Συνολικά XP', color: 'text-secondary', icon: '⚡' },
+                { val: profile.badges.length, label: 'Badges', color: 'text-primary', icon: '🏅' },
+                { val: questDone, label: 'Quests ✅', color: 'text-secondary', icon: '🎯' },
+              ].map(({ val, label, color, icon }) => (
+                <div key={label} className="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant/10 shadow-sm text-center">
+                  <div className="text-2xl mb-1">{icon}</div>
+                  <div className={`text-2xl font-extrabold ${color}`}>{val}</div>
+                  <div className="text-xs text-on-surface-variant mt-1 font-label">{label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* ── PERSONA + RADAR ── */}
+            {latestPersona && pCfg && PIcon && (
+              <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm overflow-hidden">
+                <div className={`bg-gradient-to-br ${pCfg.bg} p-6 border-b border-outline-variant/10`}>
+                  <p className="text-xs font-label font-semibold uppercase tracking-widest text-on-surface-variant mb-3">Το τελευταίο σου προφίλ</p>
+                  <div className="flex items-center gap-4">
+                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${pCfg.gradient} flex items-center justify-center shadow-lg flex-shrink-0`}>
+                      <PIcon className="w-7 h-7 text-white" />
+                    </div>
+                    <div>
+                      <h3 className={`text-xl font-extrabold bg-gradient-to-r ${pCfg.gradient} bg-clip-text text-transparent`}>{latestPersona.name}</h3>
+                      <p className="text-on-surface-variant text-sm">{latestPersona.tagline}</p>
+                    </div>
                   </div>
-                  <span className="text-2xl font-bold text-primary">{pct}%</span>
                 </div>
-                <div className="w-full h-2 bg-surface-container-high rounded-full overflow-hidden mb-5">
-                  <div className="h-full bg-secondary rounded-full transition-all" style={{ width: `${pct}%` }} />
+                {traits && (
+                  <div className="p-6">
+                    <h4 className="font-headline font-bold text-base text-on-surface mb-4 text-center">Χάρτης Δεξιοτήτων</h4>
+                    <RadarChart traits={traits} />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── QUEST BOARD ── */}
+            {questSteps.length > 0 && (
+              <div className="bg-surface-container-lowest rounded-xl p-8 border border-outline-variant/10 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <h3 className="text-xl font-headline font-bold text-on-surface">🎮 Quest Board</h3>
+                    <p className="text-on-surface-variant text-sm mt-0.5">Ολοκλήρωσε τα βήματα & κέρδισε XP</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-2xl font-bold text-primary">{questPct}%</span>
+                    <p className="text-xs text-on-surface-variant">{questDone}/{questSteps.length} quests</p>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  {latest.actionSteps.map((s, i) => (
-                    <div key={i} className={`flex items-start gap-3 p-3 rounded-lg ${checked[i] ? 'opacity-60' : ''}`}>
-                      <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center mt-0.5 ${checked[i] ? 'bg-secondary border-secondary' : 'border-outline-variant'}`}>
-                        {checked[i] && <Check className="w-3 h-3 text-white" />}
+
+                {/* Quest progress stepper */}
+                <div className="flex items-center gap-1 my-5">
+                  {questSteps.map((_, i) => (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-500 ${
+                        profileCheckedSteps[i] ? 'bg-secondary text-white shadow-md' :
+                        i === questDone ? 'bg-primary text-on-primary ring-2 ring-primary/30 animate-pulse' :
+                        'bg-surface-container-high text-on-surface-variant'
+                      }`}>
+                        {profileCheckedSteps[i] ? '✓' : i + 1}
                       </div>
-                      <span className={`text-sm ${checked[i] ? 'line-through text-outline' : 'text-on-surface'}`}>
-                        <span className="font-label font-semibold text-primary mr-1">Βήμα {i + 1}.</span>{s}
-                      </span>
+                      {i < questSteps.length - 1 && (
+                        <div className="hidden" />
+                      )}
                     </div>
                   ))}
                 </div>
-              </div>
-            );
-          })()}
+                {/* Connecting line */}
+                <div className="w-full h-1 bg-surface-container-high rounded-full overflow-hidden mb-6 -mt-2">
+                  <div className="h-full bg-secondary rounded-full transition-all duration-700" style={{ width: `${questPct}%` }} />
+                </div>
 
-          {/* Session History */}
-          {profile.sessions.length > 0 && (
+                {/* Quest cards */}
+                <div className="space-y-3">
+                  {questSteps.map((s, i) => {
+                    const done = !!profileCheckedSteps[i];
+                    const xp = xpRewards[i] || 15;
+                    return (
+                      <button key={i} onClick={() => latest && toggleProfileStep(latest.id, i, questSteps)}
+                        className={`w-full flex items-center gap-4 p-4 rounded-xl border text-left transition-all duration-300 ${
+                          done
+                            ? 'border-secondary/30 bg-secondary-container/20 opacity-70'
+                            : i === questDone
+                            ? 'border-primary/40 bg-primary/5 shadow-sm hover:shadow-md hover:-translate-y-0.5'
+                            : 'border-outline-variant/20 bg-surface-container-low hover:bg-surface-container'
+                        }`}>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-sm transition-all ${
+                          done ? 'bg-secondary text-white' :
+                          i === questDone ? 'bg-primary text-on-primary' :
+                          'bg-surface-container-high text-on-surface-variant'
+                        }`}>
+                          {done ? '✓' : `Q${i+1}`}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className={`text-sm leading-relaxed ${done ? 'line-through text-outline' : 'text-on-surface'}`}>{s}</span>
+                        </div>
+                        <div className={`flex-shrink-0 px-2 py-1 rounded-full text-xs font-label font-bold ${
+                          done ? 'bg-secondary-container/40 text-secondary' : 'bg-primary/10 text-primary'
+                        }`}>
+                          {done ? '✓' : `+${xp}`} XP
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {questPct === 100 && (
+                  <div className="mt-5 p-4 rounded-xl bg-secondary-container/30 border border-secondary/20 text-center animate-fade-in">
+                    <p className="text-secondary font-label font-bold text-lg">🎉 Όλα τα quests ολοκληρώθηκαν! +50 bonus XP</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── BADGES ── */}
             <div className="bg-surface-container-lowest rounded-xl p-8 border border-outline-variant/10 shadow-sm">
-              <h3 className="text-xl font-headline font-bold text-on-surface mb-6">Ιστορικό Αναλύσεων</h3>
-              <div className="space-y-3">
-                {[...profile.sessions].reverse().map((s) => {
-                  const pCfg = s.persona ? personaConfig[s.persona.type] || personaConfig.explorer : null;
-                  const PIcon = pCfg?.icon;
-                  const typeLabels = { highschool: 'Μαθητής', university: 'Φοιτητής', employee: 'Επαγγελματίας' };
+              <h3 className="text-xl font-headline font-bold text-on-surface mb-6">🏅 Badges ({profile.badges.length}/{BADGE_ORDER.length})</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {BADGE_ORDER.map(badgeId => {
+                  const badge = BADGES[badgeId];
+                  const earned = profile.badges.includes(badgeId);
                   return (
-                    <div key={s.id} className="flex items-center gap-4 p-4 rounded-xl bg-surface-container border border-outline-variant/20">
-                      {PIcon && pCfg && (
-                        <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${pCfg.gradient} flex items-center justify-center flex-shrink-0`}>
-                          <PIcon className="w-5 h-5 text-white" />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-label font-semibold text-on-surface text-sm">{s.persona?.name || typeLabels[s.userType] || s.userType}</p>
-                        <p className="text-xs text-on-surface-variant">{new Date(s.date).toLocaleDateString('el-GR')} • {typeLabels[s.userType]}</p>
-                      </div>
-                      {s.rating > 0 && (
-                        <div className="flex gap-0.5">
-                          {[1,2,3,4,5].map(st => <Star key={st} className={`w-3 h-3 ${st <= s.rating ? 'text-amber-400 fill-amber-400' : 'text-outline-variant'}`} />)}
-                        </div>
-                      )}
+                    <div key={badgeId} className={`p-4 rounded-xl border text-center transition-all ${
+                      earned ? 'bg-primary/10 border-primary/20 shadow-sm' : 'bg-surface-container border-outline-variant/20 opacity-40'
+                    }`}>
+                      <div className="text-3xl mb-2">{badge.emoji}</div>
+                      <p className={`text-sm font-label font-bold ${earned ? 'text-on-surface' : 'text-on-surface-variant'}`}>{badge.name}</p>
+                      <p className="text-xs text-on-surface-variant mt-1">{badge.desc}</p>
+                      {!earned && <p className="text-xs text-outline mt-2">🔒 Κλειδωμένο</p>}
                     </div>
                   );
                 })}
               </div>
             </div>
-          )}
 
-          {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center pb-8">
-            <button onClick={resetApp}
-              className="flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-label font-bold bg-primary text-on-primary hover:opacity-90 transition-all duration-200 shadow-lg shadow-primary/20">
-              <Sparkles className="w-4 h-4" />Νέα Ανάλυση
-            </button>
-            <button onClick={() => setStep('welcome')}
-              className="flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-label font-semibold bg-surface-container-lowest hover:bg-surface-container border border-outline-variant/20 transition-all duration-200">
-              <ArrowLeft className="w-4 h-4" />Αρχική
-            </button>
+            {/* ── SESSION HISTORY ── */}
+            {profile.sessions.length > 0 && (
+              <div className="bg-surface-container-lowest rounded-xl p-8 border border-outline-variant/10 shadow-sm">
+                <h3 className="text-xl font-headline font-bold text-on-surface mb-6">📋 Ιστορικό Αναλύσεων</h3>
+                <div className="space-y-3">
+                  {[...profile.sessions].reverse().map((s) => {
+                    const sCfg = s.persona ? personaConfig[s.persona.type] || personaConfig.explorer : null;
+                    const SIcon = sCfg?.icon;
+                    return (
+                      <div key={s.id} className="flex items-center gap-4 p-4 rounded-xl bg-surface-container border border-outline-variant/20">
+                        {SIcon && sCfg && (
+                          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${sCfg.gradient} flex items-center justify-center flex-shrink-0`}>
+                            <SIcon className="w-5 h-5 text-white" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-label font-semibold text-on-surface text-sm">{s.persona?.name || typeLabels[s.userType] || s.userType}</p>
+                          <p className="text-xs text-on-surface-variant">{new Date(s.date).toLocaleDateString('el-GR')} • {typeLabels[s.userType]}</p>
+                        </div>
+                        {s.rating > 0 && (
+                          <div className="flex gap-0.5">
+                            {[1,2,3,4,5].map(st => <Star key={st} className={`w-3 h-3 ${st <= s.rating ? 'text-amber-400 fill-amber-400' : 'text-outline-variant'}`} />)}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ── ACTIONS ── */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pb-8">
+              <button onClick={resetApp}
+                className="flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-label font-bold bg-primary text-on-primary hover:opacity-90 transition-all duration-200 shadow-lg shadow-primary/20">
+                <Sparkles className="w-4 h-4" />Νέα Ανάλυση
+              </button>
+              <button onClick={() => setStep('welcome')}
+                className="flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-label font-semibold bg-surface-container-lowest hover:bg-surface-container border border-outline-variant/20 transition-all duration-200">
+                <ArrowLeft className="w-4 h-4" />Αρχική
+              </button>
+            </div>
           </div>
-        </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── TERMS OF SERVICE ── */}
       {step === 'terms' && (
