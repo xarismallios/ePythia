@@ -16,7 +16,6 @@ import {
   Building2,
   TrendingUp,
   RefreshCw,
-  Quote,
   Download,
   Share2,
   Lightbulb,
@@ -132,11 +131,6 @@ export default function EPythia() {
 
   // ── Static data ────────────────────────────────────────────────
 
-  const userTypes = [
-    { id: 'highschool', title: 'Μαθητής', description: 'Ανακάλυψε ποιά σχολή σου ταιριάζει καλύτερα', icon: GraduationCap, gradient: 'from-cyan-500 to-blue-500' },
-    { id: 'university', title: 'Φοιτητής', description: 'Βρες το ιδανικό μεταπτυχιακό ή επαγγελματικό ξεκίνημα', icon: Compass, gradient: 'from-violet-500 to-purple-500' },
-    { id: 'employee', title: 'Επαγγελματίας', description: 'Εξερεύνησε το επόμενο βήμα της καριέρας σου', icon: Briefcase, gradient: 'from-fuchsia-500 to-pink-500' }
-  ];
 
   const journeyCards = [
     {
