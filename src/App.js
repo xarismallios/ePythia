@@ -776,9 +776,9 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
             <Icon className="w-10 h-10 text-white" />
           </div>
           <div className="text-center sm:text-left">
-            <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">Το προφίλ σου</p>
+            <p className="text-xs font-label font-semibold uppercase tracking-widest text-on-surface-variant mb-1">Το προφίλ σου</p>
             <h3 className={`text-3xl font-extrabold mb-2 bg-gradient-to-r ${cfg.gradient} bg-clip-text text-transparent`}>{persona.name}</h3>
-            <p className="text-gray-600 text-base leading-relaxed max-w-lg">{persona.tagline}</p>
+            <p className="text-on-surface-variant text-base leading-relaxed max-w-lg">{persona.tagline}</p>
           </div>
         </div>
       </div>
@@ -788,38 +788,38 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
   const ActionPlan = () => {
     if (!actionSteps.length) return null;
     return (
-      <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+      <div className="bg-surface-container-lowest rounded-xl p-8 border border-outline-variant/10 shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-2xl font-bold text-gray-900">Το Σχέδιο Δράσης σου</h3>
-            <p className="text-gray-500 text-sm mt-1">Τσέκαρε τα βήματα καθώς τα ολοκληρώνεις</p>
+            <h3 className="text-2xl font-headline font-bold text-primary">Το Σχέδιο Δράσης σου</h3>
+            <p className="text-on-surface-variant text-sm mt-1">Τσέκαρε τα βήματα καθώς τα ολοκληρώνεις</p>
           </div>
           <div className="text-right">
-            <span className="text-2xl font-bold text-violet-400">{actionProgress}%</span>
-            <p className="text-xs text-gray-400">{checkedCount}/{actionSteps.length} βήματα</p>
+            <span className="text-2xl font-bold text-primary">{actionProgress}%</span>
+            <p className="text-xs text-on-surface-variant">{checkedCount}/{actionSteps.length} βήματα</p>
           </div>
         </div>
-        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-6">
-          <div className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full transition-all duration-500" style={{ width: `${actionProgress}%` }} />
+        <div className="w-full h-2 bg-surface-container-high rounded-full overflow-hidden mb-6">
+          <div className="h-full bg-secondary rounded-full transition-all duration-500" style={{ width: `${actionProgress}%` }} />
         </div>
         <div className="space-y-3">
           {actionSteps.map((s, i) => (
             <button key={i} onClick={() => toggleStep(i)}
               className={`w-full flex items-start gap-4 p-4 rounded-xl border text-left transition-all duration-200 ${
-                checkedSteps[i] ? 'border-emerald-500/40 bg-emerald-500/10' : 'border-gray-200 bg-white hover:border-violet-200 hover:bg-violet-50'
+                checkedSteps[i] ? 'border-secondary/30 bg-secondary-container/20' : 'border-outline-variant/20 bg-surface-container-low hover:border-primary/20 hover:bg-surface-container'
               }`}>
-              <div className={`w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center mt-0.5 transition-all ${checkedSteps[i] ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'}`}>
+              <div className={`w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center mt-0.5 transition-all ${checkedSteps[i] ? 'bg-secondary border-secondary' : 'border-outline-variant'}`}>
                 {checkedSteps[i] && <Check className="w-3.5 h-3.5 text-white" />}
               </div>
-              <span className={`text-sm leading-relaxed transition-all ${checkedSteps[i] ? 'line-through text-slate-500' : 'text-gray-800'}`}>
-                <span className="font-semibold text-violet-400 mr-2">Βήμα {i + 1}.</span>{s}
+              <span className={`text-sm leading-relaxed transition-all ${checkedSteps[i] ? 'line-through text-outline' : 'text-on-surface'}`}>
+                <span className="font-label font-semibold text-primary mr-2">Βήμα {i + 1}.</span>{s}
               </span>
             </button>
           ))}
         </div>
         {actionProgress === 100 && (
-          <div className="mt-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-center animate-fade-in">
-            <p className="text-emerald-700 font-bold">🎉 Συγχαρητήρια! Ολοκλήρωσες όλα τα βήματα!</p>
+          <div className="mt-6 p-4 rounded-xl bg-secondary-container/30 border border-secondary/20 text-center animate-fade-in">
+            <p className="text-secondary font-label font-bold">🎉 Συγχαρητήρια! Ολοκλήρωσες όλα τα βήματα!</p>
           </div>
         )}
       </div>
@@ -831,14 +831,14 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
   // ── Render ─────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
+    <div className="min-h-screen bg-surface font-body text-on-surface pb-20">
 
       {/* Auth loading */}
       {authLoading && (
-        <div className="fixed inset-0 bg-white flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-surface flex items-center justify-center z-50">
           <div className="text-center">
-            <div className="w-16 h-16 border-4 border-gray-200 border-t-violet-600 rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-gray-500">Φόρτωση...</p>
+            <div className="w-16 h-16 border-4 border-outline-variant border-t-primary rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-on-surface-variant font-body">Φόρτωση...</p>
           </div>
         </div>
       )}
@@ -951,237 +951,241 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
       )}
 
       {/* Header */}
-      <div className="sticky top-0 bg-white/90 border-b border-gray-200 backdrop-blur-md z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center gap-4">
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="relative">
-              <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-cyan-400 via-violet-400 to-fuchsia-400 p-0.5 shadow-lg shadow-violet-500/20">
-                <div className="w-full h-full bg-white rounded-lg flex items-center justify-center">
-                  <Eye className="w-5 h-5 text-cyan-400" />
-                </div>
-              </div>
-              <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-gradient-to-br from-violet-400 to-fuchsia-400 rounded-full animate-pulse" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">e-Pythia</h1>
-              <p className="text-xs text-gray-400">Ο Σύμβουλός σου Καριέρας</p>
-            </div>
+      <header className="sticky top-0 z-50 flex justify-between items-center px-6 h-16 bg-surface/80 backdrop-blur-xl shadow-[0px_1px_0px_rgba(24,28,30,0.08)]">
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center shadow-sm">
+            <Eye className="w-5 h-5 text-on-primary" />
           </div>
-
-          {step !== 'welcome' && (
-            <div className="hidden sm:flex items-center gap-1">
-              {stepLabels.map((label, idx) => {
-                const num = idx + 1;
-                const isActive = num === currentStepNum;
-                const isDone = num < currentStepNum;
-                return (
-                  <div key={label} className="flex items-center gap-1">
-                    <div className="flex flex-col items-center">
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                        isDone ? 'bg-gradient-to-br from-cyan-500 to-violet-500 text-white'
-                        : isActive ? 'bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white ring-2 ring-violet-400/50'
-                        : 'bg-gray-100 text-gray-400 border border-gray-200'
-                      }`}>
-                        {isDone ? <Check className="w-3.5 h-3.5" /> : num}
-                      </div>
-                      <span className={`text-[10px] mt-0.5 font-medium ${isActive ? 'text-violet-400' : isDone ? 'text-gray-400' : 'text-gray-400'}`}>{label}</span>
-                    </div>
-                    {idx < stepLabels.length - 1 && (
-                      <div className={`w-6 h-px mb-4 transition-all ${isDone ? 'bg-violet-500' : 'bg-gray-200'}`} />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {profile && step !== 'profile' && (
-              <button onClick={() => setStep('profile')}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-50 hover:bg-violet-100 border border-violet-200 transition duration-200 text-sm font-medium text-violet-700">
-                <span className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white text-xs font-bold">
-                  {profile.firstName.charAt(0)}
-                </span>
-                <span className="hidden sm:inline">{profile.firstName}</span>
-              </button>
-            )}
-            {step !== 'welcome' && (
-              <button onClick={resetApp} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-200 transition duration-200 text-sm font-medium">
-                <ArrowLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">Αρχή</span>
-              </button>
-            )}
-            <button onClick={handleSignOut}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gray-100 hover:bg-red-50 border border-gray-200 hover:border-red-200 transition duration-200 text-sm text-gray-500 hover:text-red-500">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              <span className="hidden sm:inline">Έξοδος</span>
-            </button>
-          </div>
+          <span className="font-headline font-extrabold tracking-tight text-primary text-xl">e-Pythia</span>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-16">
+        {step !== 'welcome' && (
+          <div className="hidden sm:flex items-center gap-1">
+            {stepLabels.map((label, idx) => {
+              const num = idx + 1;
+              const isActive = num === currentStepNum;
+              const isDone = num < currentStepNum;
+              return (
+                <div key={label} className="flex items-center gap-1">
+                  <div className="flex flex-col items-center">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                      isDone ? 'bg-primary text-on-primary'
+                      : isActive ? 'bg-primary text-on-primary ring-2 ring-primary/30'
+                      : 'bg-surface-container-high text-on-surface-variant border border-outline-variant/30'
+                    }`}>
+                      {isDone ? <Check className="w-3.5 h-3.5" /> : num}
+                    </div>
+                    <span className={`text-[10px] mt-0.5 font-label font-medium ${isActive ? 'text-primary' : isDone ? 'text-on-surface-variant' : 'text-outline'}`}>{label}</span>
+                  </div>
+                  {idx < stepLabels.length - 1 && (
+                    <div className={`w-6 h-px mb-4 transition-all ${isDone ? 'bg-primary' : 'bg-outline-variant'}`} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {profile && step !== 'profile' && (
+            <button onClick={() => setStep('profile')}
+              className="flex items-center gap-2 px-3 py-2 rounded-full bg-surface-container hover:bg-surface-container-high border border-outline-variant/20 transition duration-200 text-sm font-label font-medium text-primary">
+              <span className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-on-primary text-xs font-bold">
+                {profile.firstName.charAt(0)}
+              </span>
+              <span className="hidden sm:inline">{profile.firstName}</span>
+            </button>
+          )}
+          {step !== 'welcome' && (
+            <button onClick={resetApp} className="flex items-center gap-2 px-3 py-2 rounded-full bg-surface-container hover:bg-surface-container-high border border-outline-variant/20 transition duration-200 text-sm font-label font-medium text-on-surface-variant">
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Αρχή</span>
+            </button>
+          )}
+          <button onClick={handleSignOut}
+            className="p-2 rounded-full hover:bg-surface-container-high transition duration-200 text-on-surface-variant hover:text-error">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-6 py-10">
 
         {/* ── WELCOME ── */}
         {step === 'welcome' && (
-  <div className="animate-fade-in">
-    {/* Hero */}
-    <div className="text-center mb-12 pt-4">
-      <div className="inline-flex items-center gap-2 bg-violet-50 border border-violet-200 text-violet-700 text-xs font-semibold px-4 py-1.5 rounded-full mb-6">
-        <Sparkles className="w-3.5 h-3.5" />
-        AI-Powered Career Guidance
-      </div>
-      <h2 className="text-5xl md:text-6xl font-extrabold text-gray-900 mb-4 tracking-tight leading-tight">
-        Ανακάλυψε<br />
-        <span className="bg-gradient-to-r from-violet-600 via-cyan-600 to-fuchsia-600 bg-clip-text text-transparent">
-          την πορεία σου
-        </span>
-      </h2>
-      <p className="text-lg text-gray-500 max-w-xl mx-auto">
-        Ο 1ος AI Σύμβουλος Καριέρας στην Ελλάδα. Εξατομικευμένες συμβουλές βασισμένες στο προφίλ σου.
-      </p>
-    </div>
-
-    {/* Chat Input */}
-    <div className="max-w-2xl mx-auto mb-10">
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-md p-2 flex items-center gap-3">
-        <MessageCircle className="w-5 h-5 text-gray-400 ml-3 flex-shrink-0" />
-        <input
-          type="text"
-          value={chatInput}
-          onChange={e => setChatInput(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleChatSubmit()}
-          placeholder="Πες μου λίγα λόγια για σένα... (π.χ. «Είμαι μαθητής και...»)"
-          className="flex-1 outline-none text-gray-700 text-base placeholder-gray-400 bg-transparent py-2"
-        />
-        <button
-          onClick={handleChatSubmit}
-          disabled={!chatInput.trim()}
-          className={`flex-shrink-0 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 ${
-            chatInput.trim()
-              ? 'bg-gradient-to-r from-violet-600 to-cyan-600 text-white hover:opacity-90 shadow-sm'
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-          }`}
-        >
-          Εκκίνηση →
-        </button>
-      </div>
-    </div>
-
-    {/* Journey Cards */}
-    <div className="max-w-4xl mx-auto mb-16">
-      <p className="text-center text-sm text-gray-400 font-medium mb-5 uppercase tracking-wider">ή επέλεξε γρήγορα</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {journeyCards.map((card) => {
-          const Icon = card.icon;
-          return (
-            <button
-              key={card.id}
-              onClick={card.action}
-              className={`group text-left px-5 py-4 rounded-xl border transition-all duration-200 ${card.bg} ${card.border} hover:shadow-md hover:-translate-y-0.5`}
-            >
-              <div className="flex items-start gap-3">
-                <Icon className={`w-5 h-5 mt-0.5 flex-shrink-0 ${card.color}`} />
-                <span className="text-sm font-medium text-gray-700 leading-snug group-hover:text-gray-900">
-                  {card.prompt}
-                </span>
+          <div className="animate-fade-in space-y-8">
+            {/* Hero */}
+            <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end pt-4">
+              <div className="lg:col-span-7">
+                <p className="text-secondary font-label font-medium mb-3 flex items-center gap-2 text-sm">
+                  <span className="w-2 h-2 rounded-full bg-secondary inline-block"></span>
+                  AI Σύμβουλος Καριέρας — Ελλάδα
+                </p>
+                <h1 className="font-headline font-bold text-primary text-[2.5rem] md:text-[2.75rem] leading-[1.1] tracking-tight mb-6">
+                  Καλωσόρισες.<br />
+                  Η πορεία σου <span className="text-secondary">ξεκινά εδώ.</span>
+                </h1>
+                <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/20 shadow-sm p-2 flex items-center gap-3 mb-4 max-w-xl">
+                  <MessageCircle className="w-5 h-5 text-outline ml-2 flex-shrink-0" />
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={e => setChatInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleChatSubmit()}
+                    placeholder="Πες μου λίγα λόγια για σένα..."
+                    className="flex-1 outline-none text-on-surface text-sm placeholder-outline bg-transparent py-2 font-body"
+                  />
+                  <button
+                    onClick={handleChatSubmit}
+                    disabled={!chatInput.trim()}
+                    className={`flex-shrink-0 px-5 py-2 rounded-lg font-label font-semibold text-sm transition-all duration-200 ${chatInput.trim() ? 'bg-primary text-on-primary hover:opacity-90 shadow-sm' : 'bg-surface-container text-outline cursor-not-allowed'}`}
+                  >
+                    Εκκίνηση →
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <button onClick={() => handleUserTypeSelect('highschool')}
+                    className="bg-primary text-on-primary px-6 py-3 rounded-xl font-headline font-bold text-base flex items-center gap-2 transition-all active:scale-95 shadow-md hover:opacity-90">
+                    <GraduationCap className="w-5 h-5" />Ξεκίνα Ανάλυση
+                  </button>
+                  <button className="bg-surface-container-high/60 text-on-surface px-6 py-3 rounded-xl font-headline font-bold text-base hover:bg-surface-container-high transition-all">
+                    Μάθε Περισσότερα
+                  </button>
+                </div>
               </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-
-    {/* Testimonials */}
-    <div className="max-w-5xl mx-auto mb-16">
-      <p className="text-center text-xs font-semibold text-gray-400 uppercase tracking-widest mb-6">Τι λένε οι χρήστες μας</p>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {testimonials.map((t, idx) => (
-          <div key={idx} className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
-            <Quote className="w-5 h-5 text-violet-400 mb-3" />
-            <p className="text-gray-600 text-sm leading-relaxed mb-4 italic">"{t.text}"</p>
-            <div className="flex items-center gap-3">
-              <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${t.gradient} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>{t.name.charAt(0)}</div>
-              <div>
-                <p className="text-sm font-semibold text-gray-800">{t.name}</p>
-                <p className="text-xs text-gray-400">{t.role}</p>
+              <div className="lg:col-span-5">
+                <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-xs font-label font-semibold text-on-surface-variant uppercase tracking-widest">Γρήγορη Εκκίνηση</span>
+                    <span className="text-secondary font-bold text-sm">6 κατηγορίες</span>
+                  </div>
+                  <div className="space-y-2">
+                    {journeyCards.slice(0, 3).map((card) => {
+                      const Icon = card.icon;
+                      return (
+                        <button key={card.id} onClick={card.action}
+                          className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg bg-surface-container-low hover:bg-surface-container transition-all duration-200 group">
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                            <Icon className="w-4 h-4 text-primary" />
+                          </div>
+                          <span className="text-sm font-label font-medium text-on-surface leading-snug">{card.prompt}</span>
+                          <ChevronRight className="w-4 h-4 text-outline ml-auto flex-shrink-0 group-hover:text-primary transition-colors" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+            </section>
 
-    {/* Coach Card */}
-    <div className="max-w-4xl mx-auto mb-8">
-      <div className="text-center mb-6">
-        <p className="text-base font-semibold text-gray-700 mb-2">Θες καθοδήγηση από εξειδικευμένο σύμβουλο καριέρας;</p>
-        <p className="text-sm text-gray-400">Είσαι μόνο ένα click μακριά</p>
-      </div>
-    </div>
-    <div className="max-w-4xl mx-auto bg-white rounded-2xl p-10 border border-gray-200 shadow-sm mb-8">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
-        <div className="flex justify-center md:justify-start">
-          <div className="relative">
-            <div className="w-36 h-36 rounded-2xl bg-gradient-to-br from-violet-500 via-cyan-500 to-fuchsia-500 p-0.5 shadow-lg flex items-center justify-center">
-              <div className="w-full h-full rounded-2xl bg-white flex items-center justify-center">
-                <svg className="w-20 h-20" viewBox="0 0 100 100" fill="none">
-                  <circle cx="50" cy="30" r="15" fill="#a78bfa"/>
-                  <rect x="35" y="45" width="30" height="35" rx="5" fill="#818cf8"/>
-                  <rect x="20" y="50" width="15" height="8" rx="4" fill="#a78bfa"/>
-                  <rect x="65" y="50" width="15" height="8" rx="4" fill="#a78bfa"/>
-                  <polygon points="50,45 47,52 53,52" fill="#06b6d4"/>
-                </svg>
+            {/* Bento Grid */}
+            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Journey Cards */}
+              <div className="lg:col-span-2 bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/10 shadow-sm">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-lg bg-secondary-container flex items-center justify-center">
+                    <Compass className="w-5 h-5 text-on-secondary-container" />
+                  </div>
+                  <h2 className="font-headline font-bold text-xl text-primary">Ποια κατηγορία σε εκφράζει;</h2>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {journeyCards.map((card) => {
+                    const Icon = card.icon;
+                    return (
+                      <button key={card.id} onClick={card.action}
+                        className="text-left flex items-start gap-3 p-4 rounded-lg bg-surface-container-low hover:bg-surface-container border border-transparent hover:border-outline-variant/30 transition-all duration-200 group">
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-primary/20 transition-colors">
+                          <Icon className="w-4 h-4 text-primary" />
+                        </div>
+                        <span className="text-sm font-label font-medium text-on-surface leading-snug">{card.prompt}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-            <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-violet-600 to-cyan-600 rounded-lg px-3 py-1 text-xs font-bold text-white shadow-md flex items-center gap-1">
-              <Star className="w-3 h-3 fill-current" />Εξειδικευμένος
-            </div>
+
+              {/* Stats Card */}
+              <div className="bg-primary text-on-primary p-8 rounded-xl relative overflow-hidden">
+                <div className="relative z-10">
+                  <h2 className="font-headline font-bold text-xl mb-8">Αποτελέσματα</h2>
+                  <div className="space-y-6">
+                    {[{label:'Μαθητές που βρήκαν κατεύθυνση',pct:'92%',w:'92%'},{label:'Φοιτητές με σαφές επαγγ. πλάνο',pct:'88%',w:'88%'},{label:'Επαγγελματίες που άλλαξαν καριέρα',pct:'76%',w:'76%'}].map(({label,pct,w}) => (
+                      <div key={label} className="flex flex-col gap-2">
+                        <div className="flex justify-between text-xs font-label opacity-80 uppercase tracking-widest">
+                          <span>{label}</span><span>{pct}</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-white/10 rounded-full">
+                          <div className="h-full bg-secondary-container rounded-full" style={{width:w}} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-secondary/20 rounded-full blur-3xl -mr-16 -mt-16" />
+              </div>
+
+              {/* Bottom row */}
+              <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Testimonials */}
+                <div className="bg-surface-container-low p-8 rounded-xl">
+                  <h2 className="font-headline font-bold text-xl text-primary mb-6">Τι λένε οι χρήστες</h2>
+                  <div className="space-y-5">
+                    {testimonials.map((t, idx) => (
+                      <div key={idx} className="flex items-start gap-3">
+                        <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${t.gradient} flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5`}>{t.name.charAt(0)}</div>
+                        <div>
+                          <p className="text-sm text-on-surface leading-relaxed italic">"{t.text}"</p>
+                          <p className="text-xs text-on-surface-variant mt-1 font-label font-medium">{t.name} · {t.role}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Coach CTA */}
+                <div className="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/10 shadow-sm flex flex-col justify-between">
+                  <div>
+                    <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center mb-5 shadow-md">
+                      <Calendar className="w-6 h-6 text-on-primary" />
+                    </div>
+                    <h3 className="font-headline font-bold text-xl text-primary mb-2">Θέλεις προσωπικό coaching;</h3>
+                    <p className="text-sm text-on-surface-variant leading-relaxed mb-4">Συνδέσου με εξειδικευμένο σύμβουλο καριέρας που έχει ζήσει το ίδιο path.</p>
+                    <div className="space-y-2 mb-6">
+                      {['Πραγματική εμπειρία στον κλάδο σου','Πρακτικές και εφαρμόσιμες συμβουλές','Η 1η συνεδρία είναι ΔΩΡΕΑΝ'].map(item => (
+                        <div key={item} className="flex items-center gap-2">
+                          <div className="w-4 h-4 rounded-full bg-secondary-container flex items-center justify-center flex-shrink-0">
+                            <Check className="w-2.5 h-2.5 text-on-secondary-container" />
+                          </div>
+                          <span className="text-sm text-on-surface font-label">{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <a href="https://calendly.com/pythiacontact/1-coaching-pythia-ai" target="_blank" rel="noopener noreferrer"
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-on-primary font-label font-semibold text-sm transition-all hover:opacity-90 shadow-md">
+                    <Calendar className="w-4 h-4" />Κλείσε Δωρεάν Συνεδρία
+                  </a>
+                </div>
+              </div>
+            </section>
           </div>
-        </div>
-        <div className="md:col-span-2">
-          <h3 className="text-2xl font-bold text-gray-900 mb-3">Θα σου Βρούμε τον Ιδανικό Σύμβουλό</h3>
-          <p className="text-gray-600 mb-4">Μετά την ανάλυση AI, θα σε συνδέσουμε με έναν <span className="font-semibold text-gray-800">εξειδικευμένο σύμβουλο καριέρας</span> που έχει ήδη ζήσει το ίδιο path.</p>
-          <div className="space-y-3 mb-6">
-            {['Πραγματική εμπειρία στον κλάδο που σε ενδιαφέρει','Ήδη έχει κάνει τη μετάβαση που εσύ σκέφτεσαι','Θα σου δώσει πρακτικές και εφαρμόσιμες συμβουλές'].map(item => (
-              <div key={item} className="flex items-start gap-3"><Check className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" /><span className="text-sm text-gray-600">{item}</span></div>
-            ))}
-          </div>
-          <div className="mb-6 inline-block bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2">
-            <p className="text-sm font-bold text-emerald-700">✨ Η πρώτη αναγνωριστική συνεδρία είναι ΔΩΡΕΑΝ</p>
-          </div>
-          <div className="flex justify-center">
-            <a href="https://calendly.com/pythiacontact/1-coaching-pythia-ai" target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 px-8 py-3 rounded-xl bg-gradient-to-r from-violet-600 via-cyan-600 to-fuchsia-600 text-white font-bold hover:opacity-90 transition-all duration-300 shadow-md hover:scale-105">
-              <Calendar className="w-5 h-5" />Κλείσε Δωρεάν Συνεδρία<ChevronRight className="w-4 h-4" />
-            </a>
-          </div>
-        </div>
-      </div>
-      <div className="grid grid-cols-3 gap-4 mt-8 pt-8 border-t border-gray-100">
-        {[{v:'50+',l:'Εξειδικευμένοι Σύμβουλοι',c:'text-violet-600'},{v:'95%',l:'Ικανοποιημένοι Χρήστες',c:'text-cyan-600'},{v:'10+',l:'Χρόνια Εμπειρίας',c:'text-fuchsia-600'}].map(({v,l,c})=>(
-          <div key={l} className="text-center"><div className={`text-2xl font-bold ${c} mb-1`}>{v}</div><div className="text-xs text-gray-400">{l}</div></div>
-        ))}
-      </div>
-    </div>
-  </div>
         )}
 
         {/* ── HIGHSCHOOL TYPE ── */}
         {step === 'highschool-type-select' && (
           <div className="max-w-4xl mx-auto animate-fade-in">
-            <div className="text-center mb-12"><h2 className="text-4xl font-bold text-gray-900 mb-4">Σε ποιο σχολείο πας;</h2><p className="text-gray-500">Διάλεξε για να λάβεις προσαρμοσμένες ερωτήσεις</p></div>
+            <div className="text-center mb-12"><h2 className="text-4xl font-headline font-bold text-primary mb-4">Σε ποιο σχολείο πας;</h2><p className="text-on-surface-variant">Διάλεξε για να λάβεις προσαρμοσμένες ερωτήσεις</p></div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {highschoolTypes.map((t) => { const Icon = t.icon; return (
                 <button key={t.id} onClick={() => handleHighschoolTypeSelect(t.id)}
-                  className="group bg-white rounded-3xl p-12 border border-gray-200 hover:border-violet-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-2">
+                  className="group bg-surface-container-lowest rounded-xl p-10 border border-outline-variant/10 hover:border-primary/30 transition-all duration-300 hover:shadow-md hover:-translate-y-1 shadow-sm">
                   <div className="flex flex-col items-center text-center">
-                    <h3 className="text-2xl font-bold mb-3 text-gray-900">{t.title}</h3>
-                    <p className="text-gray-500 text-sm mb-6">{t.description}</p>
+                    <h3 className="text-2xl font-headline font-bold mb-3 text-primary">{t.title}</h3>
+                    <p className="text-on-surface-variant text-sm mb-6">{t.description}</p>
                     <div className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${t.gradient} flex items-center justify-center mb-6 shadow-lg`}><Icon className="w-12 h-12 text-white" /></div>
-                    <ChevronRight className="w-6 h-6 text-violet-500" />
+                    <ChevronRight className="w-6 h-6 text-secondary" />
                   </div>
                 </button>
               ); })}
@@ -1192,16 +1196,16 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
         {/* ── EMPLOYEE SECTOR ── */}
         {step === 'employee-sector-select' && (
           <div className="max-w-4xl mx-auto animate-fade-in">
-            <div className="text-center mb-12"><h2 className="text-4xl font-bold text-gray-900 mb-4">Σε ποιον τομέα δραστηριοποιείσαι;</h2><p className="text-gray-500">Διάλεξε για να λάβεις προσαρμοσμένες ερωτήσεις</p></div>
+            <div className="text-center mb-12"><h2 className="text-4xl font-headline font-bold text-primary mb-4">Σε ποιον τομέα δραστηριοποιείσαι;</h2><p className="text-on-surface-variant">Διάλεξε για να λάβεις προσαρμοσμένες ερωτήσεις</p></div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {employeeSectors.map((s) => { const Icon = s.icon; return (
                 <button key={s.id} onClick={() => handleEmployeeSectorSelect(s.id)}
-                  className="group bg-white rounded-3xl p-12 border border-gray-200 hover:border-violet-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-2">
+                  className="group bg-surface-container-lowest rounded-xl p-10 border border-outline-variant/10 hover:border-primary/30 transition-all duration-300 hover:shadow-md hover:-translate-y-1 shadow-sm">
                   <div className="flex flex-col items-center text-center">
-                    <h3 className="text-2xl font-bold mb-3 text-gray-900">{s.title}</h3>
-                    <p className="text-gray-500 text-sm mb-6">{s.description}</p>
+                    <h3 className="text-2xl font-headline font-bold mb-3 text-primary">{s.title}</h3>
+                    <p className="text-on-surface-variant text-sm mb-6">{s.description}</p>
                     <div className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${s.gradient} flex items-center justify-center mb-6 shadow-lg`}><Icon className="w-12 h-12 text-white" /></div>
-                    <ChevronRight className="w-6 h-6 text-violet-500" />
+                    <ChevronRight className="w-6 h-6 text-secondary" />
                   </div>
                 </button>
               ); })}
@@ -1214,17 +1218,17 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
           <div className="max-w-2xl mx-auto animate-fade-in">
             <div className="mb-10">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-500">Ερώτηση <span className="text-violet-400 font-bold">{currentQuestionIndex + 1}</span> από {totalQuestions}</span>
-                <span className="text-sm font-semibold text-violet-400 bg-violet-500/10 px-3 py-1 rounded-full">{wizardProgress}%</span>
+                <span className="text-sm text-on-surface-variant font-label">Ερώτηση <span className="text-primary font-bold">{currentQuestionIndex + 1}</span> από {totalQuestions}</span>
+                <span className="text-sm font-label font-semibold text-primary bg-primary/10 px-3 py-1 rounded-full">{wizardProgress}%</span>
               </div>
-              <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 rounded-full transition-all duration-500" style={{ width: `${wizardProgress}%` }} />
+              <div className="w-full h-2 bg-surface-container-high rounded-full overflow-hidden">
+                <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${wizardProgress}%` }} />
               </div>
             </div>
 
             <div key={currentQuestionIndex} className="animate-slide-in">
-              <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
-                <h2 className="text-2xl font-bold mb-8 text-gray-900 leading-snug">{activeQuestion.label}</h2>
+              <div className="bg-surface-container-lowest rounded-xl p-8 border border-outline-variant/10 shadow-sm">
+                <h2 className="text-2xl font-headline font-bold mb-8 text-on-surface leading-snug">{activeQuestion.label}</h2>
 
                 {activeQuestion.type === 'select' && (
                   <div className="space-y-3">
@@ -1234,10 +1238,10 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
                       return (
                         <button key={opt} onClick={() => handleOptionSelect(activeQuestion.id, opt)}
                           className={`w-full text-left px-5 py-4 rounded-xl border font-medium transition-all duration-200 ${
-                            isFlash || isSel ? 'border-violet-500 bg-violet-500/20 text-white scale-[0.99]' : 'border-gray-200 bg-white text-gray-700 hover:border-violet-300 hover:bg-violet-50 hover:text-gray-900'
+                            isFlash || isSel ? 'border-primary bg-primary/10 text-primary scale-[0.99]' : 'border-outline-variant/30 bg-surface-container-low text-on-surface hover:border-primary/30 hover:bg-surface-container transition-colors'
                           }`}>
                           <div className="flex items-center gap-3">
-                            <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${isFlash || isSel ? 'border-violet-400 bg-violet-500' : 'border-gray-300'}`}>
+                            <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${isFlash || isSel ? 'border-primary bg-primary' : 'border-outline-variant'}`}>
                               {(isFlash || isSel) && <div className="w-2 h-2 rounded-full bg-white" />}
                             </div>
                             {opt}
@@ -1251,26 +1255,26 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
                 {activeQuestion.type === 'text' && (
                   <input type="text" value={formData[activeQuestion.id] || ''} onChange={(e) => handleInputChange(activeQuestion.id, e.target.value)}
                     placeholder={activeQuestion.placeholder} autoFocus
-                    className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 hover:border-gray-300 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-gray-800 transition-all duration-200 placeholder-gray-400" />
+                    className="w-full px-4 py-3 rounded-lg bg-surface-container-low border border-outline-variant/30 hover:border-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-on-surface transition-all duration-200 placeholder-outline font-body" />
                 )}
 
                 {activeQuestion.type === 'textarea' && (
                   <textarea value={formData[activeQuestion.id] || ''} onChange={(e) => handleInputChange(activeQuestion.id, e.target.value)}
                     placeholder={activeQuestion.placeholder} rows={5} autoFocus
-                    className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 hover:border-gray-300 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-gray-800 transition-all duration-200 placeholder-gray-400 resize-none" />
+                    className="w-full px-4 py-3 rounded-lg bg-surface-container-low border border-outline-variant/30 hover:border-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-on-surface transition-all duration-200 placeholder-outline font-body resize-none" />
                 )}
               </div>
 
               <div className="flex items-center justify-between mt-6">
-                <button onClick={goToPrevQuestion} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-all duration-200 text-sm font-medium text-gray-600">
+                <button onClick={goToPrevQuestion} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high border border-outline-variant/20 transition-all duration-200 text-sm font-label font-medium text-on-surface-variant">
                   <ChevronLeft className="w-4 h-4" />Πίσω
                 </button>
                 {activeQuestion.type !== 'select' && (
                   <button onClick={advanceQuestion} disabled={!formData[activeQuestion.id]?.trim()}
                     className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all duration-300 ${
                       formData[activeQuestion.id]?.trim()
-                        ? 'bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 text-white hover:opacity-90 hover:shadow-lg hover:shadow-violet-500/40'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
+                        ? 'bg-primary text-on-primary hover:opacity-90 shadow-md'
+                        : 'bg-surface-container text-outline cursor-not-allowed opacity-50'
                     }`}>
                     {currentQuestionIndex === totalQuestions - 1 ? 'Ολοκλήρωση' : 'Επόμενο'}<ChevronRight className="w-4 h-4" />
                   </button>
@@ -1283,27 +1287,27 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
         {/* ── CONTACT ── */}
         {step === 'contact' && (
           <div className="max-w-2xl mx-auto animate-fade-in">
-            <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Σχεδόν Έτοιμο!</h2>
-              <p className="text-gray-500 mb-8">Εισήγαγε τα στοιχεία σου για να λάβεις τη δική σου ανάλυση</p>
+            <div className="bg-surface-container-lowest rounded-xl p-8 border border-outline-variant/10 shadow-sm">
+              <h2 className="text-3xl font-headline font-bold text-primary mb-2">Σχεδόν Έτοιμο!</h2>
+              <p className="text-on-surface-variant mb-8">Εισήγαγε τα στοιχεία σου για να λάβεις τη δική σου ανάλυση</p>
               <div className="space-y-6">
                 {['firstName','lastName','email'].map(field => (
                   <div key={field}>
-                    <label className="block text-base font-semibold mb-3 text-gray-800">
+                    <label className="block text-xs font-label font-semibold mb-2 text-on-surface-variant uppercase tracking-wide">
                       {field==='firstName'?'Όνομα':field==='lastName'?'Επώνυμο':'Email'}
                     </label>
                     <div className="relative">
                       <input type={field==='email'?'email':'text'} value={contactInfo[field]} onChange={(e)=>handleContactChange(field,e.target.value)}
                         placeholder={`Εισήγαγε το ${field==='firstName'?'όνομά σου':field==='lastName'?'επώνυμό σου':'email σου'}`}
-                        className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 hover:border-gray-300 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-gray-800 transition-all duration-200 placeholder-gray-400" />
-                      {contactInfo[field] && <Check className="absolute right-4 top-3.5 w-5 h-5 text-emerald-400" />}
+                        className="w-full px-4 py-3 rounded-lg bg-surface-container-low border border-outline-variant/30 hover:border-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-on-surface transition-all duration-200 placeholder-outline font-body" />
+                      {contactInfo[field] && <Check className="absolute right-4 top-3.5 w-5 h-5 text-secondary" />}
                     </div>
                   </div>
                 ))}
               </div>
               <button onClick={handleSubmit} disabled={!isContactComplete()}
                 className={`w-full mt-10 py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-300 ${
-                  isContactComplete() ? 'bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 text-white hover:opacity-90 hover:shadow-lg hover:shadow-violet-500/50' : 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
+                  isContactComplete() ? 'bg-primary text-on-primary hover:opacity-90 shadow-md' : 'bg-surface-container text-outline cursor-not-allowed opacity-50'
                 }`}>
                 <Sparkles className="w-5 h-5" />Δημιουργία της Ανάλυσης μου
               </button>
@@ -1316,9 +1320,9 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
           <div className="max-w-5xl mx-auto animate-fade-in">
             {loading ? (
               <div className="text-center py-32">
-                <div className="flex justify-center mb-6"><div className="w-20 h-20 border-4 border-gray-200 border-t-violet-600 rounded-full animate-spin" /></div>
-                <p className="text-2xl font-semibold text-gray-600 mb-2">Ανάλυση του προφίλ σου...</p>
-                <p className="text-gray-500">Ο AI σύμβουλος δημιουργεί εξατομικευμένη καθοδήγηση</p>
+                <div className="flex justify-center mb-6"><div className="w-20 h-20 border-4 border-outline-variant border-t-primary rounded-full animate-spin" /></div>
+                <p className="text-2xl font-headline font-semibold text-primary mb-2">Ανάλυση του προφίλ σου...</p>
+                <p className="text-on-surface-variant">Ο AI σύμβουλος δημιουργεί εξατομικευμένη καθοδήγηση</p>
               </div>
             ) : (
               <div className="space-y-6">
@@ -1327,17 +1331,19 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
                 <PersonaBadge />
 
                 {/* Career Map */}
-                <div ref={resultsRef} className="bg-white rounded-2xl p-10 border border-gray-200 shadow-sm">
+                <div ref={resultsRef} className="bg-surface-container-lowest rounded-xl p-10 border border-outline-variant/10 shadow-sm">
                   <div className="flex items-center gap-3 mb-8">
-                    <Sparkles className="w-8 h-8 text-violet-400" />
-                    <h2 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">Ο Χάρτης της Καριέρας σου</h2>
+                    <div className="w-10 h-10 rounded-lg bg-secondary-container flex items-center justify-center">
+                      <Sparkles className="w-5 h-5 text-on-secondary-container" />
+                    </div>
+                    <h2 className="text-3xl font-headline font-bold text-primary">Ο Χάρτης της Καριέρας σου</h2>
                   </div>
                   <div className="text-lg leading-relaxed space-y-4">
                     {recommendations.split('\n').map((line, idx) => {
-                      if (line.startsWith('###')) return <h3 key={idx} className="mt-8 mb-3 text-2xl font-bold text-violet-700 border-b border-gray-200 pb-1 flex items-center gap-2 pt-6"><Sparkles className="w-5 h-5 text-violet-400" />{line.replace('### ','')}</h3>;
-                      if (line.startsWith('**') && line.endsWith('**')) return <p key={idx} className="text-gray-800 font-semibold">{line.replace(/\*\*/g,'')}</p>;
-                      if (line.startsWith('-')) return <p key={idx} className="ml-4 text-gray-700 flex gap-3"><span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-violet-400 flex-shrink-0" /><span>{line.replace('- ','')}</span></p>;
-                      return line.trim() && <p key={idx} className="text-gray-700">{line}</p>;
+                      if (line.startsWith('###')) return <h3 key={idx} className="mt-8 mb-3 text-xl font-headline font-bold text-primary border-b border-outline-variant/30 pb-2 flex items-center gap-2 pt-6"><span className="w-2 h-2 rounded-full bg-secondary inline-block flex-shrink-0" />{line.replace('### ','')}</h3>;
+                      if (line.startsWith('**') && line.endsWith('**')) return <p key={idx} className="text-on-surface font-label font-semibold">{line.replace(/\*\*/g,'')}</p>;
+                      if (line.startsWith('-')) return <p key={idx} className="ml-4 text-on-surface-variant flex gap-3"><span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-secondary flex-shrink-0" /><span>{line.replace('- ','')}</span></p>;
+                      return line.trim() && <p key={idx} className="text-on-surface-variant">{line}</p>;
                     })}
                   </div>
                 </div>
@@ -1347,21 +1353,20 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
 
                 {/* Profile CTA */}
                 {!profileSaved && (
-                  <div className="relative overflow-hidden rounded-2xl border border-violet-200 bg-violet-50 p-8">
-                    <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-fuchsia-500/5 pointer-events-none" />
+                  <div className="relative overflow-hidden rounded-xl border border-outline-variant/10 bg-surface-container-lowest shadow-sm p-8">
                     <div className="relative z-10 flex flex-col sm:flex-row items-center gap-6">
-                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/30 flex-shrink-0">
-                        <Trophy className="w-8 h-8 text-white" />
+                      <div className="w-14 h-14 rounded-xl bg-primary flex items-center justify-center shadow-md flex-shrink-0">
+                        <Trophy className="w-7 h-7 text-on-primary" />
                       </div>
                       <div className="flex-1 text-center sm:text-left">
-                        <h3 className="text-xl font-bold text-gray-900 mb-1">Δημιούργησε το Προφίλ σου</h3>
-                        <p className="text-gray-500 text-sm leading-relaxed">Κάνε track τον στόχο σου, παρακολούθησε το σχέδιο δράσης σου, κέρδισε XP και ξεκλείδωσε badges — όλα σε ένα μέρος.</p>
+                        <h3 className="text-xl font-headline font-bold text-primary mb-1">Δημιούργησε το Προφίλ σου</h3>
+                        <p className="text-on-surface-variant text-sm leading-relaxed">Κάνε track τον στόχο σου, παρακολούθησε το σχέδιο δράσης σου, κέρδισε XP και ξεκλείδωσε badges.</p>
                       </div>
                       <button
                         onClick={handleCreateProfile}
-                        className="flex-shrink-0 flex items-center gap-2 px-8 py-4 rounded-xl font-bold bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 text-white hover:opacity-90 hover:scale-105 transition-all duration-200 shadow-lg shadow-violet-500/30 whitespace-nowrap"
+                        className="flex-shrink-0 flex items-center gap-2 px-6 py-3 rounded-xl font-label font-semibold bg-primary text-on-primary hover:opacity-90 transition-all duration-200 shadow-md whitespace-nowrap"
                       >
-                        <Sparkles className="w-5 h-5" />
+                        <Sparkles className="w-4 h-4" />
                         Δημιούργησε το Προφίλ μου →
                       </button>
                     </div>
@@ -1371,25 +1376,25 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
                 {/* Quick Actions Row */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <button onClick={downloadPDF}
-                    className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-semibold bg-white border border-gray-200 hover:border-violet-300 hover:bg-violet-50 transition-all duration-200 text-gray-600 hover:text-gray-900">
-                    <Download className="w-5 h-5 text-violet-400" />Λήψη PDF
+                    className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-label font-semibold bg-surface-container-lowest border border-outline-variant/10 hover:border-primary/30 hover:bg-surface-container-low transition-all duration-200 text-on-surface-variant hover:text-primary shadow-sm">
+                    <Download className="w-5 h-5 text-primary" />Λήψη PDF
                   </button>
 
-                  <div className="flex flex-col items-center justify-center gap-2 px-6 py-4 rounded-xl bg-white border border-gray-200">
+                  <div className="flex flex-col items-center justify-center gap-2 px-6 py-4 rounded-xl bg-surface-container-lowest border border-outline-variant/10 shadow-sm">
                     <p className="text-xs text-gray-400 font-medium">Πόσο χρήσιμο ήταν;</p>
                     <div className="flex gap-1">
                       {[1,2,3,4,5].map(s => (
                         <button key={s} onClick={() => handleRating(s)} className="transition-transform hover:scale-110 active:scale-95">
-                          <Star className={`w-6 h-6 transition-colors ${s<=rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300 hover:text-amber-400/60'}`} />
+                          <Star className={`w-6 h-6 transition-colors ${s<=rating ? 'text-secondary fill-secondary' : 'text-outline-variant hover:text-secondary/60'}`} />
                         </button>
                       ))}
                     </div>
-                    {rating > 0 && <p className="text-xs text-emerald-400 font-medium">Ευχαριστούμε!</p>}
+                    {rating > 0 && <p className="text-xs text-secondary font-label font-medium">Ευχαριστούμε!</p>}
                   </div>
 
                   <button onClick={handleShare}
-                    className={`flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-semibold border transition-all duration-200 ${
-                      shareSuccess ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300' : 'bg-white border-gray-200 hover:border-violet-300 hover:bg-violet-50 text-gray-600 hover:text-gray-900'
+                    className={`flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-label font-semibold border transition-all duration-200 shadow-sm ${
+                      shareSuccess ? 'bg-secondary-container border-secondary/20 text-on-secondary-container' : 'bg-surface-container-lowest border-outline-variant/10 hover:border-primary/30 hover:bg-surface-container-low text-on-surface-variant hover:text-primary'
                     }`}>
                     {shareSuccess ? <><Check className="w-5 h-5" />Αντιγράφηκε!</> : <><Share2 className="w-5 h-5 text-violet-400" />Κοινοποίησε</>}
                   </button>
@@ -1401,10 +1406,10 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
                   disabled={emailSent || emailSending}
                   className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold border transition-all duration-200 ${
                     emailSent
-                      ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+                      ? 'bg-secondary-container border-secondary/20 text-on-secondary-container'
                       : emailSending
-                      ? 'bg-gray-50 border-gray-200 text-gray-400 cursor-wait'
-                      : 'bg-white border-gray-200 hover:border-violet-300 text-gray-600 hover:text-gray-900'
+                      ? 'bg-surface-container border-outline-variant/20 text-outline cursor-wait'
+                      : 'bg-surface-container-lowest border-outline-variant/10 hover:border-primary/30 text-on-surface-variant hover:text-primary'
                   }`}
                 >
                   {emailSent ? (
@@ -1412,28 +1417,28 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
                   ) : emailSending ? (
                     <>Αποστολή...</>
                   ) : (
-                    <><Mail className="w-4 h-4 text-violet-400" /> Στείλε αποτελέσματα στο email μου</>
+                    <><Mail className="w-4 h-4 text-primary" /> Στείλε αποτελέσματα στο email μου</>
                   )}
                 </button>
 
                 {/* Coaching CTA */}
-                <div className="bg-gradient-to-br from-violet-50 to-fuchsia-50 rounded-2xl p-10 border border-violet-200">
-                  <h3 className="text-2xl font-bold mb-3 text-gray-900">Έτοιμος για το Επόμενο Βήμα;</h3>
-                  <p className="text-gray-700 mb-6">Η αξιολόγηση AI σου δίνει μια ισχυρή βάση, αλλά <span className="font-semibold">το προσωπικό coaching</span> μπορεί να σε βοηθήσει ακόμα περισσότερο.</p>
+                <div className="bg-surface-container-low rounded-xl p-10 border border-outline-variant/10">
+                  <h3 className="text-2xl font-headline font-bold mb-3 text-primary">Έτοιμος για το Επόμενο Βήμα;</h3>
+                  <p className="text-on-surface-variant mb-6">Η αξιολόγηση AI σου δίνει μια ισχυρή βάση, αλλά <span className="font-semibold text-on-surface">το προσωπικό coaching</span> μπορεί να σε βοηθήσει ακόμα περισσότερο.</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                    {[{icon:Compass,color:'text-cyan-400',title:'Αποσαφηνίσεις την Κατεύθυνσή σου',sub:'Με κατάλληλη καθοδήγηση'},{icon:Calendar,color:'text-violet-400',title:'Σχέδιο Δράσης',sub:'Για τους επόμενους 6-12 μήνες'},{icon:MessageCircle,color:'text-fuchsia-400',title:'Ξεπεράσεις τα Εμπόδια',sub:'Αντιμετώπισε τις ανησυχίες σου'},{icon:Star,color:'text-emerald-400',title:'Μεγιστοποιήσεις το Δυναμικό σου',sub:'Με expert insights'}].map(({icon:Icon,color,title,sub})=>(
-                      <div key={title} className="flex gap-3"><Icon className={`w-5 h-5 ${color} flex-shrink-0 mt-1`}/><div><div className="font-semibold text-gray-800">{title}</div><div className="text-sm text-gray-500">{sub}</div></div></div>
+                    {[{icon:Compass,title:'Αποσαφηνίσεις την Κατεύθυνσή σου',sub:'Με κατάλληλη καθοδήγηση'},{icon:Calendar,title:'Σχέδιο Δράσης',sub:'Για τους επόμενους 6-12 μήνες'},{icon:MessageCircle,title:'Ξεπεράσεις τα Εμπόδια',sub:'Αντιμετώπισε τις ανησυχίες σου'},{icon:Star,title:'Μεγιστοποιήσεις το Δυναμικό σου',sub:'Με expert insights'}].map(({icon:Icon,title,sub})=>(
+                      <div key={title} className="flex gap-3"><div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5"><Icon className="w-4 h-4 text-primary" /></div><div><div className="font-label font-semibold text-on-surface">{title}</div><div className="text-sm text-on-surface-variant">{sub}</div></div></div>
                     ))}
                   </div>
-                  <div className="bg-white rounded-xl p-6 border border-gray-200">
-                    <div className="mb-4 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3">
-                      <p className="text-sm font-bold text-emerald-700">✨ Η πρώτη αναγνωριστική συνεδρία είναι ΔΩΡΕΑΝ</p>
-                      <p className="text-xs text-emerald-600 mt-1">Θα γνωριστείτε, θα αναλύσουμε το προφίλ σου και θα σχεδιάσουμε το σχέδιό σας μαζί</p>
+                  <div className="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10 shadow-sm">
+                    <div className="mb-4 bg-secondary-container/30 border border-secondary/20 rounded-lg px-4 py-3">
+                      <p className="text-sm font-label font-bold text-secondary">✨ Η πρώτη αναγνωριστική συνεδρία είναι ΔΩΡΕΑΝ</p>
+                      <p className="text-xs text-on-secondary-container mt-1">Θα γνωριστείτε, θα αναλύσουμε το προφίλ σου και θα σχεδιάσουμε το σχέδιό σας μαζί</p>
                     </div>
                     <div className="flex justify-center">
                       <a href="https://calendly.com/pythiacontact/1-coaching-pythia-ai" target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-3 px-10 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 text-white font-bold text-lg hover:opacity-90 transition-all duration-300 shadow-lg shadow-violet-500/40 hover:scale-105">
-                        <Calendar className="w-6 h-6" />Κλείσε Δωρεάν Συνεδρία<ChevronRight className="w-5 h-5" />
+                        className="inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-primary text-on-primary font-label font-bold text-base hover:opacity-90 transition-all duration-300 shadow-md hover:scale-105">
+                        <Calendar className="w-5 h-5" />Κλείσε Δωρεάν Συνεδρία<ChevronRight className="w-4 h-4" />
                       </a>
                     </div>
                   </div>
@@ -1442,11 +1447,11 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
                 {/* Bottom buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <button onClick={retakeQuestionnaire}
-                    className="flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-semibold bg-white hover:bg-gray-50 border border-gray-200 hover:border-violet-300 transition-all duration-200 text-gray-600 hover:text-gray-900">
+                    className="flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-label font-semibold bg-surface-container-lowest border border-outline-variant/10 hover:border-primary/20 hover:bg-surface-container-low transition-all duration-200 text-on-surface-variant hover:text-primary shadow-sm">
                     <RefreshCw className="w-4 h-4" />Δοκίμασε Διαφορετικές Απαντήσεις
                   </button>
                   <button onClick={resetApp}
-                    className="flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-semibold bg-white hover:bg-gray-50 border border-gray-200 hover:border-violet-300 transition-all duration-200 text-gray-600 hover:text-gray-900">
+                    className="flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-label font-semibold bg-surface-container-lowest border border-outline-variant/10 hover:border-primary/20 hover:bg-surface-container-low transition-all duration-200 text-on-surface-variant hover:text-primary shadow-sm">
                     Εξερεύνησε Άλλη Διαδρομή
                   </button>
                 </div>
@@ -1467,35 +1472,35 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
               ? Math.round(((profile.totalXP - levelInfo.min) / (levelInfo.nextXP - levelInfo.min)) * 100)
               : 100;
             return (
-              <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+              <div className="bg-surface-container-lowest rounded-xl p-8 border border-outline-variant/10 shadow-sm">
                 <div className="flex items-center gap-5 mb-6">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-violet-500/30 flex-shrink-0">
+                  <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center text-2xl font-bold text-on-primary shadow-lg flex-shrink-0">
                     {profile.firstName.charAt(0)}
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Γεια σου, {profile.firstName}!</h2>
+                    <h2 className="text-2xl font-headline font-bold text-on-surface">Γεια σου, {profile.firstName}!</h2>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-sm font-bold text-violet-700 bg-violet-100 px-3 py-0.5 rounded-full border border-violet-200">
+                      <span className="text-sm font-label font-bold text-primary bg-primary/10 px-3 py-0.5 rounded-full border border-primary/20">
                         Lv.{levelInfo.level} — {levelInfo.name}
                       </span>
-                      <span className="text-sm text-gray-500">{profile.totalXP} XP</span>
+                      <span className="text-sm text-on-surface-variant">{profile.totalXP} XP</span>
                     </div>
                   </div>
                 </div>
                 {levelInfo.nextXP && (
                   <div>
-                    <div className="flex justify-between text-xs text-gray-500 mb-2">
+                    <div className="flex justify-between text-xs text-on-surface-variant mb-2">
                       <span>{profile.totalXP} XP</span>
                       <span>{levelInfo.nextXP - profile.totalXP} XP μέχρι Level {levelInfo.level + 1}</span>
                     </div>
-                    <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
+                    <div className="w-full h-3 bg-surface-container-high rounded-full overflow-hidden">
+                      <div className="h-full bg-primary rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
                 )}
                 {!levelInfo.nextXP && (
-                  <div className="mt-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-center">
-                    <p className="text-amber-700 font-bold">🏆 Έχεις φτάσει στο μέγιστο level!</p>
+                  <div className="mt-2 p-3 rounded-xl bg-secondary-container/30 border border-secondary/20 text-center">
+                    <p className="text-secondary font-label font-bold">🏆 Έχεις φτάσει στο μέγιστο level!</p>
                   </div>
                 )}
               </div>
@@ -1505,14 +1510,14 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
           {/* Stats row */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
-              { val: profile.sessions.length, label: 'Αναλύσεις', color: 'text-cyan-400' },
-              { val: profile.totalXP, label: 'Συνολικά XP', color: 'text-violet-400' },
-              { val: profile.badges.length, label: 'Badges', color: 'text-fuchsia-400' },
-              { val: profile.sessions.reduce((acc, s) => acc + Object.values(s.checkedSteps || {}).filter(Boolean).length, 0), label: 'Βήματα ✅', color: 'text-emerald-400' },
+              { val: profile.sessions.length, label: 'Αναλύσεις', color: 'text-primary' },
+              { val: profile.totalXP, label: 'Συνολικά XP', color: 'text-secondary' },
+              { val: profile.badges.length, label: 'Badges', color: 'text-tertiary' },
+              { val: profile.sessions.reduce((acc, s) => acc + Object.values(s.checkedSteps || {}).filter(Boolean).length, 0), label: 'Βήματα ✅', color: 'text-secondary' },
             ].map(({ val, label, color }) => (
-              <div key={label} className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm text-center">
+              <div key={label} className="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant/10 shadow-sm text-center">
                 <div className={`text-3xl font-extrabold ${color}`}>{val}</div>
-                <div className="text-xs text-gray-500 mt-1">{label}</div>
+                <div className="text-xs text-on-surface-variant mt-1">{label}</div>
               </div>
             ))}
           </div>
@@ -1524,14 +1529,14 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
             const Icon = cfg.icon;
             return (
               <div className={`bg-gradient-to-br ${cfg.bg} rounded-2xl p-6 border ${cfg.border} backdrop-blur-sm`}>
-                <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">Τελευταίο Προφίλ</p>
+                <p className="text-xs font-label font-semibold uppercase tracking-widest text-on-surface-variant mb-3">Τελευταίο Προφίλ</p>
                 <div className="flex items-center gap-4">
                   <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${cfg.gradient} flex items-center justify-center shadow-lg flex-shrink-0`}>
                     <Icon className="w-7 h-7 text-white" />
                   </div>
                   <div>
                     <h3 className={`text-xl font-extrabold bg-gradient-to-r ${cfg.gradient} bg-clip-text text-transparent`}>{p.name}</h3>
-                    <p className="text-gray-600 text-sm">{p.tagline}</p>
+                    <p className="text-on-surface-variant text-sm">{p.tagline}</p>
                   </div>
                 </div>
               </div>
@@ -1539,20 +1544,20 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
           })()}
 
           {/* Badges */}
-          <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
-            <h3 className="text-xl font-bold text-gray-900 mb-6">Badges ({profile.badges.length}/{BADGE_ORDER.length})</h3>
+          <div className="bg-surface-container-lowest rounded-xl p-8 border border-outline-variant/10 shadow-sm">
+            <h3 className="text-xl font-headline font-bold text-on-surface mb-6">Badges ({profile.badges.length}/{BADGE_ORDER.length})</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {BADGE_ORDER.map(badgeId => {
                 const badge = BADGES[badgeId];
                 const earned = profile.badges.includes(badgeId);
                 return (
                   <div key={badgeId} className={`p-4 rounded-xl border text-center transition-all ${
-                    earned ? 'bg-violet-50 border-violet-200' : 'bg-gray-50 border-gray-200 opacity-40'
+                    earned ? 'bg-primary/10 border-primary/20' : 'bg-surface-container border-outline-variant/20 opacity-40'
                   }`}>
                     <div className="text-3xl mb-2">{badge.emoji}</div>
-                    <p className={`text-sm font-bold ${earned ? 'text-gray-900' : 'text-gray-400'}`}>{badge.name}</p>
-                    <p className="text-xs text-gray-400 mt-1">{badge.desc}</p>
-                    {!earned && <p className="text-xs text-slate-600 mt-2">🔒 Κλειδωμένο</p>}
+                    <p className={`text-sm font-label font-bold ${earned ? 'text-on-surface' : 'text-on-surface-variant'}`}>{badge.name}</p>
+                    <p className="text-xs text-on-surface-variant mt-1">{badge.desc}</p>
+                    {!earned && <p className="text-xs text-on-surface-variant mt-2">🔒 Κλειδωμένο</p>}
                   </div>
                 );
               })}
@@ -1567,25 +1572,25 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
             const done = Object.values(checked).filter(Boolean).length;
             const pct = Math.round((done / latest.actionSteps.length) * 100);
             return (
-              <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+              <div className="bg-surface-container-lowest rounded-xl p-8 border border-outline-variant/10 shadow-sm">
                 <div className="flex justify-between items-center mb-4">
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">Σχέδιο Δράσης</h3>
-                    <p className="text-gray-500 text-sm mt-0.5">Τελευταία ανάλυση</p>
+                    <h3 className="text-xl font-headline font-bold text-on-surface">Σχέδιο Δράσης</h3>
+                    <p className="text-on-surface-variant text-sm mt-0.5">Τελευταία ανάλυση</p>
                   </div>
-                  <span className="text-2xl font-bold text-violet-400">{pct}%</span>
+                  <span className="text-2xl font-bold text-primary">{pct}%</span>
                 </div>
-                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-5">
-                  <div className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                <div className="w-full h-2 bg-surface-container-high rounded-full overflow-hidden mb-5">
+                  <div className="h-full bg-secondary rounded-full transition-all" style={{ width: `${pct}%` }} />
                 </div>
                 <div className="space-y-2">
                   {latest.actionSteps.map((s, i) => (
                     <div key={i} className={`flex items-start gap-3 p-3 rounded-lg ${checked[i] ? 'opacity-60' : ''}`}>
-                      <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center mt-0.5 ${checked[i] ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'}`}>
+                      <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center mt-0.5 ${checked[i] ? 'bg-secondary border-secondary' : 'border-outline-variant'}`}>
                         {checked[i] && <Check className="w-3 h-3 text-white" />}
                       </div>
-                      <span className={`text-sm ${checked[i] ? 'line-through text-slate-500' : 'text-gray-700'}`}>
-                        <span className="font-semibold text-violet-400 mr-1">Βήμα {i + 1}.</span>{s}
+                      <span className={`text-sm ${checked[i] ? 'line-through text-outline' : 'text-on-surface'}`}>
+                        <span className="font-label font-semibold text-primary mr-1">Βήμα {i + 1}.</span>{s}
                       </span>
                     </div>
                   ))}
@@ -1596,27 +1601,27 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
 
           {/* Session History */}
           {profile.sessions.length > 0 && (
-            <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">Ιστορικό Αναλύσεων</h3>
+            <div className="bg-surface-container-lowest rounded-xl p-8 border border-outline-variant/10 shadow-sm">
+              <h3 className="text-xl font-headline font-bold text-on-surface mb-6">Ιστορικό Αναλύσεων</h3>
               <div className="space-y-3">
                 {[...profile.sessions].reverse().map((s) => {
                   const pCfg = s.persona ? personaConfig[s.persona.type] || personaConfig.explorer : null;
                   const PIcon = pCfg?.icon;
                   const typeLabels = { highschool: 'Μαθητής', university: 'Φοιτητής', employee: 'Επαγγελματίας' };
                   return (
-                    <div key={s.id} className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border border-gray-200">
+                    <div key={s.id} className="flex items-center gap-4 p-4 rounded-xl bg-surface-container border border-outline-variant/20">
                       {PIcon && pCfg && (
                         <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${pCfg.gradient} flex items-center justify-center flex-shrink-0`}>
                           <PIcon className="w-5 h-5 text-white" />
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-800 text-sm">{s.persona?.name || typeLabels[s.userType] || s.userType}</p>
-                        <p className="text-xs text-gray-400">{new Date(s.date).toLocaleDateString('el-GR')} • {typeLabels[s.userType]}</p>
+                        <p className="font-label font-semibold text-on-surface text-sm">{s.persona?.name || typeLabels[s.userType] || s.userType}</p>
+                        <p className="text-xs text-on-surface-variant">{new Date(s.date).toLocaleDateString('el-GR')} • {typeLabels[s.userType]}</p>
                       </div>
                       {s.rating > 0 && (
                         <div className="flex gap-0.5">
-                          {[1,2,3,4,5].map(st => <Star key={st} className={`w-3 h-3 ${st <= s.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`} />)}
+                          {[1,2,3,4,5].map(st => <Star key={st} className={`w-3 h-3 ${st <= s.rating ? 'text-amber-400 fill-amber-400' : 'text-outline-variant'}`} />)}
                         </div>
                       )}
                     </div>
@@ -1629,11 +1634,11 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center pb-8">
             <button onClick={resetApp}
-              className="flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-bold bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 text-white hover:opacity-90 transition-all duration-200 shadow-lg shadow-violet-500/30">
+              className="flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-label font-bold bg-primary text-on-primary hover:opacity-90 transition-all duration-200 shadow-lg shadow-primary/20">
               <Sparkles className="w-4 h-4" />Νέα Ανάλυση
             </button>
             <button onClick={() => setStep('welcome')}
-              className="flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-semibold bg-white hover:bg-gray-50 border border-gray-200 transition-all duration-200">
+              className="flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-label font-semibold bg-surface-container-lowest hover:bg-surface-container border border-outline-variant/20 transition-all duration-200">
               <ArrowLeft className="w-4 h-4" />Αρχική
             </button>
           </div>
@@ -1642,12 +1647,37 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
       )}
 
       {/* Footer */}
-      <div className="text-center py-10 text-gray-400 text-sm border-t border-gray-200 mt-16">
-        <p className="mb-3"><span className="font-semibold text-gray-700">e-Pythia</span> • AI Σύμβουλος Καριέρας</p>
-        <p className="mt-3"><a href="mailto:pythiacontact@gmail.com" className="text-violet-600 hover:text-violet-700 transition-colors font-semibold">pythiacontact@gmail.com</a></p>
+      <div className="text-center py-10 text-on-surface-variant text-sm border-t border-outline-variant/20 mt-16">
+        <p className="mb-3"><span className="font-headline font-semibold text-primary">e-Pythia</span> • AI Σύμβουλος Καριέρας</p>
+        <p className="mt-3"><a href="mailto:pythiacontact@gmail.com" className="text-secondary hover:text-secondary/80 transition-colors font-label font-semibold">pythiacontact@gmail.com</a></p>
       </div>
 
       </div>
+
+      {/* ── BOTTOM NAV ── */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-surface-container/90 backdrop-blur border-t border-outline-variant/20 flex items-center justify-around px-2 pb-safe">
+        {[
+          { id: 'welcome', icon: 'home', label: 'Αρχική' },
+          { id: 'results', icon: 'explore', label: 'Αποτελέσματα' },
+          { id: 'profile', icon: 'person', label: 'Προφίλ' },
+        ].map(({ id, icon, label }) => {
+          const active = step === id;
+          return (
+            <button key={id} onClick={() => setStep(id)}
+              className={`flex flex-col items-center gap-0.5 py-3 px-5 rounded-2xl transition-all duration-200 ${
+                active ? 'text-primary' : 'text-on-surface-variant hover:text-on-surface'
+              }`}>
+              <span className={`material-symbols-outlined text-[24px] transition-all ${active ? 'font-variation-settings-fill' : ''}`}
+                style={active ? { fontVariationSettings: "'FILL' 1" } : {}}>
+                {icon}
+              </span>
+              <span className={`text-[10px] font-label font-medium leading-none ${active ? 'font-semibold' : ''}`}>{label}</span>
+              {active && <span className="w-1 h-1 rounded-full bg-primary mt-0.5" />}
+            </button>
+          );
+        })}
+      </nav>
+
       )} {/* end authUser */}
 
       <style jsx>{`
