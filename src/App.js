@@ -134,6 +134,7 @@ export default function EPythia() {
   const [testimonialIdx, setTestimonialIdx] = useState(0);
   const [chatLoading, setChatLoading] = useState(false);
   const [profileCheckedSteps, setProfileCheckedSteps] = useState({});
+  const [pendingSessionSave, setPendingSessionSave] = useState(false);
 
   const resultsRef = useRef(null);
 
@@ -167,6 +168,17 @@ export default function EPythia() {
       setProfileCheckedSteps(latest.checkedSteps || {});
     }
   }, [profile]);
+
+  // After login/signup, if user had clicked "Δημιούργησε Προφίλ", save session and go to profile
+  useEffect(() => {
+    if (pendingSessionSave && authUser && profile !== null) {
+      setPendingSessionSave(false);
+      saveSessionToProfile(persona, actionSteps, rating).then(() => {
+        setProfileSaved(true);
+        setStep('profile');
+      });
+    }
+  }, [authUser, profile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Static data ────────────────────────────────────────────────
 
@@ -681,6 +693,13 @@ export default function EPythia() {
   };
 
   const handleCreateProfile = async () => {
+    if (!authUser) {
+      // Not logged in → show signup modal, save session after login
+      setPendingSessionSave(true);
+      setAuthMode('signup');
+      setShowAuthModal(true);
+      return;
+    }
     await saveSessionToProfile(persona, actionSteps, rating);
     setProfileSaved(true);
     setStep('profile');
