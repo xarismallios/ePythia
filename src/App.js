@@ -1808,10 +1808,73 @@ Steps: συγκεκριμένα, εξατομικευμένα, ρήματα δρ
         </div>
       )}
 
+      {/* ── TERMS OF SERVICE ── */}
+      {step === 'terms' && (
+        <div className="max-w-3xl mx-auto px-6 py-10 animate-fade-in">
+          <button onClick={() => setStep('welcome')} className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-primary font-label font-semibold transition-colors mb-8">
+            <ArrowLeft className="w-4 h-4" />Πίσω
+          </button>
+          <h1 className="text-3xl font-headline font-bold text-primary mb-2">Όροι Χρήσης</h1>
+          <p className="text-xs text-on-surface-variant mb-8">Τελευταία ενημέρωση: Απρίλιος 2025</p>
+          <div className="space-y-6 text-sm text-on-surface-variant leading-relaxed">
+            {[
+              { title: '1. Αποδοχή Όρων', body: 'Χρησιμοποιώντας την υπηρεσία e-Pythia αποδέχεστε πλήρως τους παρόντες Όρους Χρήσης. Αν δεν συμφωνείτε, παρακαλούμε να μην χρησιμοποιείτε την υπηρεσία.' },
+              { title: '2. Περιγραφή Υπηρεσίας', body: 'Το e-Pythia παρέχει AI-υποστηριζόμενη συμβουλευτική καριέρας μέσω ερωτηματολογίου και ανάλυσης. Οι απαντήσεις είναι ενδεικτικές και δεν αντικαθιστούν επαγγελματική συμβουλή από ειδικούς.' },
+              { title: '3. Χρήση Υπηρεσίας', body: 'Η υπηρεσία προορίζεται για προσωπική, μη εμπορική χρήση. Απαγορεύεται η αναπαραγωγή, διανομή ή εμπορική εκμετάλλευση του περιεχομένου χωρίς ρητή γραπτή άδεια.' },
+              { title: '4. Λογαριασμός Χρήστη', body: 'Ο χρήστης ευθύνεται για την ασφάλεια των κωδικών πρόσβασής του. Το e-Pythia δεν φέρει ευθύνη για μη εξουσιοδοτημένη πρόσβαση στον λογαριασμό σας.' },
+              { title: '5. Περιορισμός Ευθύνης', body: 'Το e-Pythia δεν εγγυάται αποτελέσματα από τη χρήση της υπηρεσίας. Οι αναλύσεις παράγονται αυτόματα από AI και ενδέχεται να περιέχουν ανακρίβειες. Χρησιμοποιήστε τα αποτελέσματα ως αφετηρία σκέψης, όχι ως οριστική καθοδήγηση.' },
+              { title: '6. Πνευματική Ιδιοκτησία', body: 'Όλο το περιεχόμενο, το λογισμικό και η τεχνολογία της πλατφόρμας ανήκουν στο e-Pythia. Απαγορεύεται η αντιγραφή ή τροποποίηση χωρίς άδεια.' },
+              { title: '7. Τερματισμός', body: 'Διατηρούμε το δικαίωμα να αναστείλουμε ή τερματίσουμε λογαριασμούς που παραβιάζουν τους παρόντες όρους.' },
+              { title: '8. Επικοινωνία', body: 'Για οποιαδήποτε απορία σχετικά με τους Όρους Χρήσης, επικοινωνήστε μαζί μας στο pythiacontact@gmail.com.' },
+            ].map(({ title, body }) => (
+              <div key={title}>
+                <h2 className="font-label font-bold text-on-surface mb-1">{title}</h2>
+                <p>{body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── PRIVACY POLICY ── */}
+      {step === 'privacy' && (
+        <div className="max-w-3xl mx-auto px-6 py-10 animate-fade-in">
+          <button onClick={() => setStep('welcome')} className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-primary font-label font-semibold transition-colors mb-8">
+            <ArrowLeft className="w-4 h-4" />Πίσω
+          </button>
+          <h1 className="text-3xl font-headline font-bold text-primary mb-2">Πολιτική Απορρήτου</h1>
+          <p className="text-xs text-on-surface-variant mb-8">Τελευταία ενημέρωση: Απρίλιος 2025</p>
+          <div className="space-y-6 text-sm text-on-surface-variant leading-relaxed">
+            {[
+              { title: '1. Υπεύθυνος Επεξεργασίας', body: 'Υπεύθυνος επεξεργασίας των προσωπικών σας δεδομένων είναι η υπηρεσία e-Pythia (pythiacontact@gmail.com). Συμμορφωνόμαστε με τον Γενικό Κανονισμό Προστασίας Δεδομένων (GDPR) της ΕΕ.' },
+              { title: '2. Δεδομένα που Συλλέγουμε', body: 'Συλλέγουμε: (α) στοιχεία εγγραφής (όνομα, email), (β) απαντήσεις ερωτηματολογίου, (γ) δεδομένα χρήσης και cookies, (δ) δεδομένα από τρίτες υπηρεσίες (Google Analytics, Supabase).' },
+              { title: '3. Σκοπός Επεξεργασίας', body: 'Τα δεδομένα σας χρησιμοποιούνται αποκλειστικά για: παροχή εξατομικευμένης ανάλυσης καριέρας, βελτίωση της υπηρεσίας, αποστολή αποτελεσμάτων μέσω email (μόνο αν το ζητήσετε).' },
+              { title: '4. Cookies & Διαφήμιση', body: 'Χρησιμοποιούμε cookies για ανάλυση επισκεψιμότητας (Google Analytics) και για την προβολή σχετικών διαφημίσεων μέσω Google AdSense. Μπορείτε να απενεργοποιήσετε τα cookies από τις ρυθμίσεις του browser σας.' },
+              { title: '5. Κοινοποίηση σε Τρίτους', body: 'Δεν πωλούμε ούτε μοιραζόμαστε τα προσωπικά σας δεδομένα με τρίτους, εκτός από τους απαραίτητους παρόχους υπηρεσιών (Supabase για αποθήκευση, OpenAI/Anthropic για AI ανάλυση) και μόνο στον βαθμό που είναι αναγκαίο.' },
+              { title: '6. Διατήρηση Δεδομένων', body: 'Διατηρούμε τα δεδομένα σας για όσο διατηρείτε ενεργό λογαριασμό. Μπορείτε να ζητήσετε διαγραφή οποτεδήποτε στο pythiacontact@gmail.com.' },
+              { title: '7. Δικαιώματά σας (GDPR)', body: 'Έχετε δικαίωμα πρόσβασης, διόρθωσης, διαγραφής, φορητότητας και εναντίωσης στην επεξεργασία των δεδομένων σας. Για άσκηση των δικαιωμάτων σας επικοινωνήστε στο pythiacontact@gmail.com.' },
+              { title: '8. Ασφάλεια', body: 'Εφαρμόζουμε τεχνικά και οργανωτικά μέτρα για την προστασία των δεδομένων σας, συμπεριλαμβανομένης κρυπτογράφησης SSL και ασφαλούς αποθήκευσης μέσω Supabase.' },
+              { title: '9. Επικοινωνία', body: 'Για ερωτήματα σχετικά με την προστασία δεδομένων, επικοινωνήστε: pythiacontact@gmail.com' },
+            ].map(({ title, body }) => (
+              <div key={title}>
+                <h2 className="font-label font-bold text-on-surface mb-1">{title}</h2>
+                <p>{body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
-      <div className="text-center py-10 text-on-surface-variant text-sm border-t border-outline-variant/20 mt-16">
+      <div className="text-center py-10 text-on-surface-variant text-sm border-t border-outline-variant/20 mt-16 px-6">
         <p className="mb-3"><span className="font-headline font-semibold text-primary">e-Pythia</span> • AI Σύμβουλος Καριέρας</p>
-        <p className="mt-3"><a href="mailto:pythiacontact@gmail.com" className="text-secondary hover:text-secondary/80 transition-colors font-label font-semibold">pythiacontact@gmail.com</a></p>
+        <p className="mt-2"><a href="mailto:pythiacontact@gmail.com" className="text-secondary hover:text-secondary/80 transition-colors font-label font-semibold">pythiacontact@gmail.com</a></p>
+        <div className="flex items-center justify-center gap-4 mt-4">
+          <button onClick={() => setStep('terms')} className="text-on-surface-variant hover:text-primary underline underline-offset-2 transition-colors text-xs font-label">Όροι Χρήσης</button>
+          <span className="text-outline-variant">·</span>
+          <button onClick={() => setStep('privacy')} className="text-on-surface-variant hover:text-primary underline underline-offset-2 transition-colors text-xs font-label">Πολιτική Απορρήτου</button>
+        </div>
+        <p className="mt-4 text-xs text-outline">© {new Date().getFullYear()} e-Pythia. Με επιφύλαξη παντός δικαιώματος.</p>
       </div>
 
 
